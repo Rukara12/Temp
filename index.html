@@ -264,7 +264,7 @@
 </aside>
 
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/projectnoonnu/libgif-js@master/libgif.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
 
 <script>
@@ -386,7 +386,11 @@
         const gifIdx = activeGifs.findIndex(g => g.fabricObj === layers[layerKey]);
         if (gifIdx > -1) {
             const gifData = activeGifs[gifIdx];
-            if (gifData.tempImgTag && gifData.tempImgTag.parentNode) { gifData.tempImgTag.parentNode.removeChild(gifData.tempImgTag); }
+            // [수정] libgif가 생성한 wrapper까지 확실히 제거
+            if (gifData.tempImgTag && gifData.tempImgTag.parentNode) {
+                const wrapper = gifData.tempImgTag.parentNode;
+                if (wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+            }
             if (gifData.superGif) gifData.superGif.pause();
             activeGifs.splice(gifIdx, 1);
         }
@@ -408,20 +412,20 @@
     function loadGif(dataUrl, layerKey) {
         const imgTag = document.createElement('img');
         imgTag.src = dataUrl;
-        imgTag.style.display = 'none';
         
-        let hiddenContainer = document.getElementById('hidden-gif-container');
-        if (!hiddenContainer) {
-            hiddenContainer = document.createElement('div');
-            hiddenContainer.id = 'hidden-gif-container';
-            hiddenContainer.style.width = '0'; hiddenContainer.style.height = '0';
-            hiddenContainer.style.overflow = 'hidden'; hiddenContainer.style.position = 'absolute';
-            document.body.appendChild(hiddenContainer);
-        }
-        hiddenContainer.appendChild(imgTag);
+        // [롤백 및 재수정] 컨테이너 방식 대신 Off-screen 배치로 중복 버그 해결
+        imgTag.style.position = 'absolute';
+        imgTag.style.left = '-9999px';
+        imgTag.style.top = '-9999px';
+        document.body.appendChild(imgTag);
 
         const rubbableGif = new SuperGif({ gif: imgTag, auto_play: false });
         rubbableGif.load(function() {
+            // SuperGif 로드 완료 시 생성되는 wrapper div를 숨겨서 화면에 안 보이게 처리
+            if (imgTag.parentNode) {
+                imgTag.parentNode.style.display = 'none';
+            }
+
             const gifCanvas = rubbableGif.get_canvas();
             const fabricImg = new fabric.Image(gifCanvas, { objectCaching: false });
             setupLayerObj(fabricImg, layerKey);
@@ -535,7 +539,6 @@
         });
     });
 
-    // [로고 효과 수정] 사각 외곽선 제거 및 PNG 투명 공백 제외한 테두리 추적 구현
     function updateLogoEffects() {
         if (!layers.img3) return;
         const shadowOn = document.getElementById('logo-shadow-toggle').checked;
@@ -543,14 +546,8 @@
         const borderWidth = parseFloat(document.getElementById('logo-border-width').value);
         const borderColor = document.getElementById('logo-border-color').value;
 
-        // 1. 기존 사각 테두리 속성 제거
-        layers.img3.set({
-            stroke: null,
-            strokeWidth: 0
-        });
+        layers.img3.set({ stroke: null, strokeWidth: 0 });
 
-        // 2. 테두리 설정 (PNG 투명 공백 제외하고 픽셀 외곽선 따기)
-        // Fabric shadow를 오프셋 없이 blur를 이용해 투명도를 고려한 테두리 효과 구현
         if (borderOn && borderWidth > 0) {
             layers.img3.shadow = new fabric.Shadow({
                 color: borderColor,
@@ -562,7 +559,6 @@
             layers.img3.shadow = null;
         }
 
-        // 3. 그림자 효과 설정 (PNG 투명 공백 제외하고 픽셀 그림자 따기)
         if (!layers.img3.filters) layers.img3.filters = [];
         layers.img3.filters = layers.img3.filters.filter(f => f.type !== 'DropShadow');
 
@@ -696,6 +692,7 @@
                 g.fabricObj.dirty = true;
             });
             
+            // [수정 유지] 정확한 캔버스 크기(1:1 비율) 캡처로 잘림 방지
             const frameCanvas = canvas.toCanvasElement(1);
             gif.addFrame(frameCanvas, { delay: frameDelay, copy: true });
             await new Promise(r => setTimeout(r, 0));
