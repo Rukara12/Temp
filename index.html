@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>텐카 템플릿 - 에디터</title>
     <style>
-        /* [1] 웹폰트 정의 */
+        /* [1] 웹폰트 정의 - 기존 유지 */
         @font-face {
             font-family: 'PyeongtaekSunset';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408@1.0/PTNoeulL.woff2') format('woff2');
@@ -19,7 +19,7 @@
             font-display: swap;
         }
 
-        /* [2] 레이아웃 스타일 */
+        /* [2] 레이아웃 스타일 수정 */
         body { 
             margin: 0; padding: 0; 
             font-family: 'PyeongtaekSunset', sans-serif; 
@@ -30,12 +30,14 @@
             transition: all 0.3s ease;
         }
 
+        /* 모바일 모드 스타일 */
         body.mobile-mode {
             flex-direction: column;
             overflow-y: auto;
             height: auto;
         }
 
+        /* 사이드바 공통 */
         .sidebar {
             width: 300px;
             background: #ffffff;
@@ -60,6 +62,7 @@
             overflow-y: visible;
         }
 
+        /* 메인 작업 영역 */
         .main-content {
             flex: 1;
             display: flex;
@@ -78,6 +81,7 @@
             background: #ced4da;
         }
 
+        /* 컨트롤 그룹 스타일 */
         .control-section {
             margin-bottom: 25px;
             padding-bottom: 15px;
@@ -93,6 +97,7 @@
             align-items: center;
         }
 
+        /* 기존 요소 스타일 정돈 */
         #meme-container {
             position: relative;
             width: 1024px;
@@ -106,10 +111,12 @@
             flex-shrink: 0;
         }
 
+        /* 모바일 모드 시 컨테이너 크기 자동 조절 */
         body.mobile-mode #meme-container {
-            transform: scale(0.35); 
+            transform: scale(0.35); /* 기본 배율, JS에서 동적 계산 */
         }
 
+        /* 버튼 및 입력창 디자인 개선 */
         button { 
             width: 100%;
             padding: 10px; 
@@ -143,6 +150,7 @@
 
         .hint { color: #868e96; font-size: 12px; margin-top: 10px; line-height: 1.4; }
         
+        /* 기존 기능 유지용 CSS */
         .photo-layer { position: absolute; overflow: hidden; transition: opacity 0.2s; }
         #layer-photo-1 { z-index: 1; top: 0px; left: 200px; width: 700px; height: 440px; }
         #layer-photo-2 { z-index: 2; top: 470px; left: 531px; width: 90px; height: 150px; }
@@ -158,6 +166,7 @@
         .slider-item input[type="range"] { width: 100px; }
         .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; }
 
+        /* 반응형 스케일 유지 */
         @media screen and (max-width: 1400px) {
             body:not(.mobile-mode) #meme-container { transform: scale(0.8); }
         }
@@ -261,7 +270,6 @@
 
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
-
 <script>
     const maxFontSize = 42;
     const minFontSize = 12;
@@ -509,7 +517,7 @@
                 
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    states[id].gifSrc = ev.target.result;
+                    states[id].gifSrc = ev.target.result; // GIF 원본 저장
                     states[id].el.src = ev.target.result;
                     states[id].el.style.display = 'block';
                     updateTransform(id);
@@ -628,10 +636,12 @@
         });
     });
 
+    // GIF 저장 기능 - [수정됨: willReadFrequently 경고 해결 및 캡처 로직 최적화]
     document.getElementById('save-gif-btn').addEventListener('click', async function() {
         const btn = this;
         const originalText = btn.textContent;
         
+        // GIF가 하나라도 있는지 확인
         const hasGif = [1, 2, 3].some(id => states[id].isGif && states[id].gifSrc);
         
         if (!hasGif) {
@@ -658,6 +668,7 @@
         bg.style.opacity = '1'; layers.forEach(l => l.style.opacity = '1'); bubbles.forEach(b => b.style.opacity = '1');
 
         try {
+            // GIF 프레임 추출을 위한 준비
             const gifImages = [];
             const gifPromises = [];
             
@@ -687,6 +698,7 @@
             const workerBlob = await workerResponse.blob();
             const workerUrl = URL.createObjectURL(workerBlob);
 
+            // GIF 설정
             const gif = new GIF({
                 workers: 2,
                 quality: 10,
@@ -695,12 +707,15 @@
                 workerScript: workerUrl
             });
 
+            // 프레임 수와 딜레이 설정
             const frameCount = 20;
-            const frameDelay = 100; 
+            const frameDelay = 100; // 100ms per frame
 
             for (let i = 0; i < frameCount; i++) {
-                await new Promise(resolve => setTimeout(resolve, 50));
+                // DOM 렌더링 주기를 기다림 (움짤 프레임 업데이트 보장)
+                await new Promise(resolve => setTimeout(resolve, 100));
                 
+                // 1. html2canvas로 현재 화면 스냅샷 캡처
                 const canvas = await html2canvas(container, { 
                     scale: 1, 
                     useCORS: true, 
@@ -709,7 +724,18 @@
                     allowTaint: true
                 });
 
-                gif.addFrame(canvas, { delay: frameDelay });
+                // 2. [중요] willReadFrequently 경고 해결을 위한 버퍼 캔버스 생성
+                // getImageData가 호출될 캔버스에 속성을 미리 부여하여 성능 저하 및 정지 현상 해결
+                const bufferCanvas = document.createElement('canvas');
+                bufferCanvas.width = canvas.width;
+                bufferCanvas.height = canvas.height;
+                const ctx = bufferCanvas.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(canvas, 0, 0);
+
+                // 3. GIF 프레임에 추가
+                gif.addFrame(bufferCanvas, { delay: frameDelay });
+                
+                // 진행상황 표시
                 btn.textContent = `GIF 생성 중... ${Math.round((i + 1) / frameCount * 100)}%`;
             }
 
@@ -719,7 +745,7 @@
                 link.href = URL.createObjectURL(blob);
                 link.click();
                 URL.revokeObjectURL(link.href);
-                URL.revokeObjectURL(workerUrl); 
+                URL.revokeObjectURL(workerUrl);
 
                 btn.textContent = originalText;
                 btn.disabled = false;
