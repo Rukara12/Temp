@@ -166,10 +166,6 @@
         .slider-item input[type="range"] { width: 100px; }
         .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; }
 
-        /* [추가] 진행률 표시 바 스타일 */
-        .progress-container { width: 100%; background: #dee2e6; border-radius: 5px; margin-top: 5px; display: none; overflow: hidden; }
-        .progress-bar { width: 0%; height: 8px; background: #007bff; transition: width 0.1s; }
-
         /* 반응형 스케일 유지 */
         @media screen and (max-width: 1400px) {
             body:not(.mobile-mode) #meme-container { transform: scale(0.8); }
@@ -266,16 +262,14 @@
             <button class="history-btn" onclick="undo()">되돌리기</button>
             <button class="history-btn" onclick="redo()">다시하기</button>
         </div>
-        <button class="save-btn" id="save-btn">최종 결과물 저장</button>
-        <button class="save-btn" id="save-webm-btn" style="background: #007bff; margin-top: 5px;">움짤(WebM) 저장</button>
-        <div class="progress-container" id="webm-progress-container">
-            <div class="progress-bar" id="webm-progress-bar"></div>
-        </div>
+        <button class="save-btn" id="save-btn">최종 결과물 저장 (PNG)</button>
+        <button class="save-btn" id="save-gif-btn" style="background: #6610f2;">움짤로 저장 (GIF)</button>
         <div class="hint" style="text-align: center;">텍스트는 클릭하여 직접 수정 가능</div>
     </div>
 </aside>
 
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
 <script>
     const maxFontSize = 42;
     const minFontSize = 12;
@@ -297,7 +291,8 @@
         const snapshot = {
             layers: Object.keys(states).map(id => ({
                 id, x: states[id].x, y: states[id].y, scale: states[id].scale,
-                rotate: states[id].rotate, flip: states[id].flip, src: states[id].el ? states[id].el.src : null
+                rotate: states[id].rotate, flip: states[id].flip, src: states[id].el ? states[id].el.src : null,
+                isGif: states[id].isGif, gifSrc: states[id].gifSrc
             })),
             bubbles: Array.from(document.querySelectorAll('.bubble')).map(b => ({
                 id: b.id, html: b.innerHTML, fontSize: b.style.fontSize
@@ -324,6 +319,7 @@
         data.layers.forEach(l => {
             const s = states[l.id];
             s.x = l.x; s.y = l.y; s.scale = l.scale; s.rotate = l.rotate; s.flip = l.flip;
+            s.isGif = l.isGif; s.gifSrc = l.gifSrc;
             if (l.id !== 'none' && l.src) { s.el.src = l.src; s.el.style.display = 'block'; }
             updateTransform(l.id);
         });
@@ -460,9 +456,9 @@
 
     const states = {
         none: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('meme-container') },
-        1: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-1') },
-        2: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-2') },
-        3: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-3') }
+        1: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-1'), isGif: false, gifSrc: null },
+        2: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-2'), isGif: false, gifSrc: null },
+        3: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-3'), isGif: false, gifSrc: null }
     };
 
     function resetLayer() {
@@ -516,14 +512,22 @@
         document.getElementById(`img-input-${id}`).addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
+                const isGif = file.type === 'image/gif';
+                states[id].isGif = isGif;
+                
                 const reader = new FileReader();
                 reader.onload = (ev) => {
+                    states[id].gifSrc = ev.target.result; // GIF 원본 저장
                     states[id].el.src = ev.target.result;
                     states[id].el.style.display = 'block';
                     updateTransform(id);
                     saveState();
                     document.querySelector(`input[name="target"][value="${id}"]`).checked = true;
                     updateVisibility();
+                    
+                    if (isGif) {
+                        console.log(`Layer ${id}: GIF 감지됨`);
+                    }
                 };
                 reader.readAsDataURL(file);
             }
@@ -583,7 +587,6 @@
         } else if (e.touches.length === 2) {
             const currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
             
-            // [버그 수정 핵심] initialDist가 0이거나 설정되지 않은 상태에서 이동이 발생하면 현재 거리로 초기화하여 Infinity 발생 방지
             if (!initialDist || initialDist === 0) {
                 initialDist = currentDist;
                 startScale = states[id].scale;
@@ -633,86 +636,124 @@
         });
     });
 
-    // [추가] 진행 상황 시각화 기능이 포함된 움짤(WebM) 저장 로직
-    document.getElementById('save-webm-btn').addEventListener('click', async function() {
+    // GIF 저장 기능 추가
+    document.getElementById('save-gif-btn').addEventListener('click', async function() {
         const btn = this;
-        const progressBarContainer = document.getElementById('webm-progress-container');
-        const progressBar = document.getElementById('webm-progress-bar');
-        const originalText = btn.innerText;
+        const originalText = btn.textContent;
         
-        if (!confirm("약 3초간 화면을 녹화하여 WebM 영상을 생성합니다. 진행하시겠습니까?")) return;
-
+        // GIF가 하나라도 있는지 확인
+        const hasGif = [1, 2, 3].some(id => states[id].isGif && states[id].gifSrc);
+        
+        if (!hasGif) {
+            alert('업로드된 GIF 이미지가 없습니다. GIF를 업로드한 후 다시 시도해주세요.');
+            return;
+        }
+        
+        btn.textContent = 'GIF 생성 중...';
         btn.disabled = true;
-        btn.innerText = "녹화 중...";
-        progressBarContainer.style.display = 'block';
-        progressBar.style.width = '0%';
 
         const bg = document.getElementById('background-layer');
         const layers = [1, 2, 3].map(i => document.getElementById(`layer-photo-${i}`));
         const bubbles = document.querySelectorAll('.bubble');
+        const isMobile = document.body.classList.contains('mobile-mode');
+        const prevScale = states.none.scale;
+        const prevX = states.none.x;
+        const prevY = states.none.y;
 
-        // 녹화용 UI 설정 (가이드 라인 제거 및 불투명도 복구)
-        bg.style.opacity = '1';
-        layers.forEach(l => l.style.opacity = '1');
-        bubbles.forEach(b => b.style.opacity = '1');
-
-        // 캔버스 및 레코더 설정
-        const canvas = document.createElement('canvas');
-        canvas.width = 1024;
-        canvas.height = 765;
-        const ctx = canvas.getContext('2d');
-        const stream = canvas.captureStream(15); // 15 FPS
-        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
-        const chunks = [];
-
-        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-        recorder.onstop = () => {
-            const blob = new Blob(chunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = '텐카_움짤.webm';
-            link.click();
-            
-            btn.disabled = false;
-            btn.innerText = originalText;
-            progressBarContainer.style.display = 'none';
-            updateVisibility(); 
-        };
-
-        recorder.start();
-
-        const duration = 3000; 
-        const startTime = Date.now();
-
-        async function recordFrame() {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(100, (elapsed / duration) * 100);
-            
-            // 시각적 진행률 업데이트
-            progressBar.style.width = progress + '%';
-
-            if (elapsed >= duration) {
-                recorder.stop();
-                return;
-            }
-            
-            const frameCanvas = await html2canvas(container, { 
-                scale: 1, 
-                useCORS: true, 
-                logging: false,
-                backgroundColor: null 
-            });
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(frameCanvas, 0, 0);
-            
-            requestAnimationFrame(recordFrame);
+        if(isMobile) {
+            states.none.scale = 1.0; states.none.x = 0; states.none.y = 0;
+            updateTransform('none');
         }
 
-        recordFrame();
-    });
-</script>
+        bg.style.opacity = '1'; layers.forEach(l => l.style.opacity = '1'); bubbles.forEach(b => b.style.opacity = '1');
 
-</body>
-</html>
+        try {
+            // GIF 프레임 추출을 위한 준비
+            const gifImages = [];
+            const gifPromises = [];
+            
+            for (let i = 1; i <= 3; i++) {
+                if (states[i].isGif && states[i].gifSrc) {
+                    gifPromises.push(
+                        new Promise((resolve) => {
+                            const img = new Image();
+                            img.crossOrigin = 'anonymous';
+                            img.onload = () => {
+                                gifImages[i] = {
+                                    img: img,
+                                    element: states[i].el
+                                };
+                                resolve();
+                            };
+                            img.src = states[i].gifSrc;
+                        })
+                    );
+                }
+            }
+            
+            await Promise.all(gifPromises);
+
+            // GIF 설정
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: 1024,
+                height: 765,
+                workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
+            });
+
+            // 프레임 수와 딜레이 설정 (20프레임으로 증가하여 더 부드러운 애니메이션)
+            const frameCount = 20;
+            const frameDelay = 100; // 100ms per frame
+
+            for (let i = 0; i < frameCount; i++) {
+                // GIF 애니메이션 효과 시뮬레이션
+                // 실제로는 원본 GIF가 자동으로 애니메이션되므로 여러 프레임 캡처
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                const canvas = await html2canvas(container, { 
+                    scale: 1, 
+                    useCORS: true, 
+                    logging: false, 
+                    backgroundColor: null,
+                    allowTaint: true
+                });
+
+                gif.addFrame(canvas, { delay: frameDelay });
+                
+                // 진행상황 표시
+                btn.textContent = `GIF 생성 중... ${Math.round((i + 1) / frameCount * 100)}%`;
+            }
+
+            gif.on('finished', function(blob) {
+                const link = document.createElement('a');
+                link.download = '텐카_결과물_animated.gif';
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                URL.revokeObjectURL(link.href);
+
+                btn.textContent = originalText;
+                btn.disabled = false;
+
+                if(isMobile) {
+                    states.none.scale = prevScale; states.none.x = prevX; states.none.y = prevY;
+                    updateTransform('none');
+                }
+                updateVisibility();
+            });
+
+            gif.render();
+
+        } catch (error) {
+            console.error('GIF 생성 오류:', error);
+            alert('GIF 생성 실패: ' + error.message);
+            btn.textContent = originalText;
+            btn.disabled = false;
+            
+            if(isMobile) {
+                states.none.scale = prevScale; states.none.x = prevX; states.none.y = prevY;
+                updateTransform('none');
+            }
+            updateVisibility();
+        }
+    });
