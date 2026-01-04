@@ -220,18 +220,18 @@
         <div id="manual-font-controls" style="margin-top: 10px;">
             <div class="slider-item">
                 좌상단: 
-                <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="55">
-                <input type="number" class="num-input font-num" data-id="text_tl" value="55">
+                <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="41">
+                <input type="number" class="num-input font-num" data-id="text_tl" value="41">
             </div>
             <div class="slider-item">
                 좌하단: 
-                <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="55">
-                <input type="number" class="num-input font-num" data-id="text_bl" value="55">
+                <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="24">
+                <input type="number" class="num-input font-num" data-id="text_bl" value="24">
             </div>
             <div class="slider-item">
                 우상단: 
-                <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="55">
-                <input type="number" class="num-input font-num" data-id="text_tr" value="55">
+                <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="44">
+                <input type="number" class="num-input font-num" data-id="text_tr" value="44">
             </div>
         </div>
         <div class="hint">박스 모서리를 드래그하여 크기를 키우면 글자도 함께 커집니다.</div>
@@ -329,45 +329,34 @@
         const commonStyle = {
             fontFamily: 'PyeongtaekSunset', fontWeight: 'bold', textAlign: 'center',
             fill: '#000000', lineHeight: 1.2, originX: 'left', originY: 'top',
-            editable: true, splitByGrapheme: true, fontSize: 55, padding: 15
+            editable: true, splitByGrapheme: true, padding: 15
         };
 
-        const createText = (text, l, t, w, h, key) => {
+        const createText = (text, l, t, w, h, key, defaultSize) => {
             const tBox = new fabric.Textbox(text, {
-                ...commonStyle, left: l, top: t, width: w, height: h, fixedHeight: h
+                ...commonStyle, left: l, top: t, width: w, height: h, fixedHeight: h, fontSize: defaultSize
             });
             tBox._layerKey = key;
             tBox._originalTop = t;
             layers[key] = tBox;
             canvas.add(tBox);
             
-            // [지시사항 1] Auto-Resize 제거 및 박스 크기에 따른 폰트 조절 로직
             tBox.on('scaling', function() {
                 const scaleX = this.scaleX;
                 const newFontSize = this.fontSize * scaleX;
-                
-                this.set({
-                    fontSize: newFontSize,
-                    width: this.width * scaleX,
-                    scaleX: 1,
-                    scaleY: 1
-                });
+                this.set({ fontSize: newFontSize, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
                 syncFontControls(this);
             });
 
-            tBox.on('changed', () => { 
-                alignVerticalCenter(tBox);
-                saveHistory(); 
-            });
+            tBox.on('changed', () => { alignVerticalCenter(tBox); saveHistory(); });
         };
 
-        createText("텐카쨩 반박하는 내용···\n듣기 싫은 말···", 1, 1, 215, 330, 'text_tl');
-        createText("나쨩 미안··· 잘 안 들려···\n아무튼 어쩌구 저쩌구 한데다\n이러저러하고 이래저래\n장점이 많아서 재밌는 게임이라는\n장황한 설명···", 1, 420, 230, 350, 'text_bl');
-        createText("나쨩 이거 봐봐···!\n대충 어쩌구 저쩌구\n갓겜···!", 810, 1, 215, 410, 'text_tr');
+        // [지시사항 1] 기본 글자 크기 수정 (41, 24, 44)
+        createText("텐카쨩 반박하는 내용···\n듣기 싫은 말···", 1, 1, 215, 330, 'text_tl', 41);
+        createText("나쨩 미안··· 잘 안 들려···\n아무튼 어쩌구 저쩌구 한데다\n이러저러하고 이래저래\n장점이 많아서 재밌는 게임이라는\n장황한 설명···", 1, 420, 230, 350, 'text_bl', 24);
+        createText("나쨩 이거 봐봐···!\n대충 어쩌구 저쩌구\n갓겜···!", 810, 1, 215, 410, 'text_tr', 44);
 
-        Object.keys(layers).forEach(k => {
-            if(k.startsWith('text')) alignVerticalCenter(layers[k]);
-        });
+        Object.keys(layers).forEach(k => { if(k.startsWith('text')) alignVerticalCenter(layers[k]); });
     }
 
     function alignVerticalCenter(textbox) {
@@ -375,11 +364,8 @@
         const textHeight = textbox.calcTextHeight();
         const boxHeight = textbox.fixedHeight;
         const originalTop = textbox._originalTop || textbox.top;
-        if (textHeight < boxHeight) {
-            textbox.set('top', originalTop + (boxHeight - textHeight) / 2);
-        } else {
-            textbox.set('top', originalTop);
-        }
+        if (textHeight < boxHeight) { textbox.set('top', originalTop + (boxHeight - textHeight) / 2); } 
+        else { textbox.set('top', originalTop); }
         canvas.requestRenderAll();
     }
 
@@ -401,9 +387,7 @@
         const gifIdx = activeGifs.findIndex(g => g.fabricObj === layers[layerKey]);
         if (gifIdx > -1) {
             const gifData = activeGifs[gifIdx];
-            if (gifData.tempImgTag && gifData.tempImgTag.parentNode) {
-                gifData.tempImgTag.parentNode.removeChild(gifData.tempImgTag);
-            }
+            if (gifData.tempImgTag && gifData.tempImgTag.parentNode) { gifData.tempImgTag.parentNode.removeChild(gifData.tempImgTag); }
             if (gifData.superGif) gifData.superGif.pause();
             activeGifs.splice(gifIdx, 1);
         }
@@ -480,33 +464,28 @@
         document.querySelector('input[name="target"][value="none"]').checked = true;
     });
 
-    // [지시사항 2] 투명도 로직 전면 수정
+    // [지시사항 2] 투명도 로직 수정
     function setFocusMode(activeObj) {
         if (!layers.overlay) return;
         
-        // 말풍선(img1), 핸드폰(img2), 로고(img3) 중 하나가 선택되었는지 확인
         const photoTargets = [layers.img1, layers.img2, layers.img3];
+        // 선택된 객체가 사진(img1, img2, img3)일 때만 배경 투명도 조절
         const isPhotoSelected = photoTargets.includes(activeObj);
 
-        if (isPhotoSelected) {
+        if (isPhotoSelected && activeObj !== null) {
             layers.overlay.set('opacity', 0.3);
-            ['text_tl', 'text_bl', 'text_tr'].forEach(k => {
-                if(layers[k]) layers[k].set('opacity', 0);
-            });
+            ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].set('opacity', 0); });
         } else {
+            // 평상시(객체 미선택, 텍스트 선택 등)에는 투명도 1.0 유지
             layers.overlay.set('opacity', 1.0);
-            ['text_tl', 'text_bl', 'text_tr'].forEach(k => {
-                if(layers[k]) layers[k].set('opacity', 1.0);
-            });
+            ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].set('opacity', 1.0); });
         }
         canvas.requestRenderAll();
     }
 
     function resetAllOpacities() {
         if (layers.overlay) layers.overlay.set('opacity', 1.0);
-        ['text_tl', 'text_bl', 'text_tr'].forEach(k => {
-            if(layers[k]) layers[k].set('opacity', 1.0);
-        });
+        ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].set('opacity', 1.0); });
         canvas.requestRenderAll();
     }
 
@@ -559,11 +538,14 @@
         const borderWidth = parseFloat(document.getElementById('logo-border-width').value);
         const borderColor = document.getElementById('logo-border-color').value;
         layers.img3.shadow = null;
-        if (borderOn && borderWidth > 0) {
-            layers.img3.set('shadow', new fabric.Shadow({ color: borderColor, blur: 0, offsetX: borderWidth, offsetY: borderWidth }));
-        } else if (shadowOn) {
-            layers.img3.set('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.9)', blur: 5, offsetX: 5, offsetY: 5 }));
+        if (layers.img3.filters) { layers.img3.filters = layers.img3.filters.filter(f => f.type !== 'DropShadow'); } 
+        else { layers.img3.filters = []; }
+        if (borderOn && borderWidth > 0) { layers.img3.set('shadow', new fabric.Shadow({ color: borderColor, blur: 0, offsetX: borderWidth, offsetY: borderWidth })); }
+        if (shadowOn) {
+            const shadowFilter = new fabric.Image.filters.DropShadow({ color: 'rgba(0,0,0,0.9)', blur: 5, offsetX: 5, offsetY: 5 });
+            layers.img3.filters.push(shadowFilter);
         }
+        layers.img3.applyFilters();
         canvas.requestRenderAll();
         saveHistory();
     }
@@ -628,15 +610,12 @@
 
     document.getElementById('save-btn').addEventListener('click', async () => {
         canvas.discardActiveObject();
-        // [지시사항 2] 저장 시 모든 투명도를 1로 강제 설정
         resetAllOpacities();
-        
         const wrapper = document.getElementById('canvas-wrapper');
         const originalTransform = wrapper.style.transform;
         const originalMargin = wrapper.style.marginTop;
         wrapper.style.transform = 'none';
         wrapper.style.marginTop = '0';
-        
         const loading = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
         loading.style.display = 'flex';
