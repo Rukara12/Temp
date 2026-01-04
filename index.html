@@ -170,13 +170,20 @@
         @media screen and (max-width: 1400px) {
             body:not(.mobile-mode) #meme-container { transform: scale(0.8); }
         }
+
+        /* 녹화 영역 가이드 스타일 (추가됨) */
+        .guide-active {
+            outline: 5px dashed #ff4757 !important;
+            outline-offset: -5px;
+            z-index: 999;
+        }
     </style>
 </head>
 <body>
 
 <aside class="sidebar">
     <div class="control-section">
-        <div class="section-title">🖼️ 이미지 업로드(움짤 가능)</div>
+        <div class="section-title">🖼️ 이미지 업로드(움짤 저장 불가)</div>
         <button class="upload-btn" onclick="document.getElementById('img-input-1').click();">말풍선 사진</button>
         <button class="upload-btn" onclick="document.getElementById('img-input-2').click();">핸드폰 사진</button>
         <button class="upload-btn" onclick="document.getElementById('img-input-3').click();">로고 사진</button>
@@ -228,6 +235,9 @@
         <label style="cursor:pointer; font-size: 14px; font-weight: bold; color: #007bff;">
             <input type="checkbox" id="mobile-mode-toggle"> 모바일 최적화 UI 모드
         </label>
+        <button type="button" class="issue-btn" style="background:#495057; color:white; margin-top:10px;" onclick="toggleRecordingGuide()">
+            녹화 영역 가이드 토글
+        </button>
     </div>
 
     <div class="control-section">
@@ -262,14 +272,12 @@
             <button class="history-btn" onclick="undo()">되돌리기</button>
             <button class="history-btn" onclick="redo()">다시하기</button>
         </div>
-        <button class="save-btn" id="save-btn">최종 결과물 저장 (PNG)</button>
-        <button class="save-btn" id="save-gif-btn" style="background: #6610f2;">움짤로 저장 (GIF)</button>
+        <button class="save-btn" id="save-btn">최종 결과물 저장</button>
         <div class="hint" style="text-align: center;">텍스트는 클릭하여 직접 수정 가능</div>
     </div>
 </aside>
 
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
 <script>
     const maxFontSize = 42;
     const minFontSize = 12;
@@ -291,8 +299,7 @@
         const snapshot = {
             layers: Object.keys(states).map(id => ({
                 id, x: states[id].x, y: states[id].y, scale: states[id].scale,
-                rotate: states[id].rotate, flip: states[id].flip, src: states[id].el ? states[id].el.src : null,
-                isGif: states[id].isGif, gifSrc: states[id].gifSrc
+                rotate: states[id].rotate, flip: states[id].flip, src: states[id].el ? states[id].el.src : null
             })),
             bubbles: Array.from(document.querySelectorAll('.bubble')).map(b => ({
                 id: b.id, html: b.innerHTML, fontSize: b.style.fontSize
@@ -319,7 +326,6 @@
         data.layers.forEach(l => {
             const s = states[l.id];
             s.x = l.x; s.y = l.y; s.scale = l.scale; s.rotate = l.rotate; s.flip = l.flip;
-            s.isGif = l.isGif; s.gifSrc = l.gifSrc;
             if (l.id !== 'none' && l.src) { s.el.src = l.src; s.el.style.display = 'block'; }
             updateTransform(l.id);
         });
@@ -456,9 +462,9 @@
 
     const states = {
         none: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('meme-container') },
-        1: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-1'), isGif: false, gifSrc: null },
-        2: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-2'), isGif: false, gifSrc: null },
-        3: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-3'), isGif: false, gifSrc: null }
+        1: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-1') },
+        2: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-2') },
+        3: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-3') }
     };
 
     function resetLayer() {
@@ -512,22 +518,14 @@
         document.getElementById(`img-input-${id}`).addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                const isGif = file.type === 'image/gif';
-                states[id].isGif = isGif;
-                
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    states[id].gifSrc = ev.target.result; // GIF 원본 저장
                     states[id].el.src = ev.target.result;
                     states[id].el.style.display = 'block';
                     updateTransform(id);
                     saveState();
                     document.querySelector(`input[name="target"][value="${id}"]`).checked = true;
                     updateVisibility();
-                    
-                    if (isGif) {
-                        console.log(`Layer ${id}: GIF 감지됨`);
-                    }
                 };
                 reader.readAsDataURL(file);
             }
@@ -636,142 +634,17 @@
         });
     });
 
-    // GIF 저장 기능 - [수정됨: willReadFrequently 경고 해결 및 캡처 로직 최적화]
-    document.getElementById('save-gif-btn').addEventListener('click', async function() {
-        const btn = this;
-        const originalText = btn.textContent;
+    // 녹화 영역 가이드 토글 함수 (추가됨)
+    function toggleRecordingGuide() {
+        const container = document.getElementById('meme-container');
+        container.classList.toggle('guide-active');
         
-        // GIF가 하나라도 있는지 확인
-        const hasGif = [1, 2, 3].some(id => states[id].isGif && states[id].gifSrc);
-        
-        if (!hasGif) {
-            alert('업로드된 GIF 이미지가 없습니다. GIF를 업로드한 후 다시 시도해주세요.');
-            return;
+        const isActive = container.classList.contains('guide-active');
+        if (isActive) {
+            alert('녹화 가이드가 활성화되었습니다. 꿀캠 영역을 빨간 점선에 맞춰주세요.');
         }
-        
-        btn.textContent = 'GIF 생성 중...';
-        btn.disabled = true;
-
-        const bg = document.getElementById('background-layer');
-        const layers = [1, 2, 3].map(i => document.getElementById(`layer-photo-${i}`));
-        const bubbles = document.querySelectorAll('.bubble');
-        const isMobile = document.body.classList.contains('mobile-mode');
-        const prevScale = states.none.scale;
-        const prevX = states.none.x;
-        const prevY = states.none.y;
-
-        if(isMobile) {
-            states.none.scale = 1.0; states.none.x = 0; states.none.y = 0;
-            updateTransform('none');
-        }
-
-        bg.style.opacity = '1'; layers.forEach(l => l.style.opacity = '1'); bubbles.forEach(b => b.style.opacity = '1');
-
-        try {
-            // GIF 프레임 추출을 위한 준비
-            const gifImages = [];
-            const gifPromises = [];
-            
-            for (let i = 1; i <= 3; i++) {
-                if (states[i].isGif && states[i].gifSrc) {
-                    gifPromises.push(
-                        new Promise((resolve) => {
-                            const img = new Image();
-                            img.crossOrigin = 'anonymous';
-                            img.onload = () => {
-                                gifImages[i] = {
-                                    img: img,
-                                    element: states[i].el
-                                };
-                                resolve();
-                            };
-                            img.src = states[i].gifSrc;
-                        })
-                    );
-                }
-            }
-            
-            await Promise.all(gifPromises);
-
-            // Web Worker CORS 문제 해결을 위한 Blob 로드 방식
-            const workerResponse = await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');
-            const workerBlob = await workerResponse.blob();
-            const workerUrl = URL.createObjectURL(workerBlob);
-
-            // GIF 설정
-            const gif = new GIF({
-                workers: 2,
-                quality: 10,
-                width: 1024,
-                height: 765,
-                workerScript: workerUrl
-            });
-
-            // 프레임 수와 딜레이 설정
-            const frameCount = 20;
-            const frameDelay = 100; // 100ms per frame
-
-            for (let i = 0; i < frameCount; i++) {
-                // DOM 렌더링 주기를 기다림 (움짤 프레임 업데이트 보장)
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // 1. html2canvas로 현재 화면 스냅샷 캡처
-                const canvas = await html2canvas(container, { 
-                    scale: 1, 
-                    useCORS: true, 
-                    logging: false, 
-                    backgroundColor: null,
-                    allowTaint: true
-                });
-
-                // 2. [중요] willReadFrequently 경고 해결을 위한 버퍼 캔버스 생성
-                // getImageData가 호출될 캔버스에 속성을 미리 부여하여 성능 저하 및 정지 현상 해결
-                const bufferCanvas = document.createElement('canvas');
-                bufferCanvas.width = canvas.width;
-                bufferCanvas.height = canvas.height;
-                const ctx = bufferCanvas.getContext('2d', { willReadFrequently: true });
-                ctx.drawImage(canvas, 0, 0);
-
-                // 3. GIF 프레임에 추가
-                gif.addFrame(bufferCanvas, { delay: frameDelay });
-                
-                // 진행상황 표시
-                btn.textContent = `GIF 생성 중... ${Math.round((i + 1) / frameCount * 100)}%`;
-            }
-
-            gif.on('finished', function(blob) {
-                const link = document.createElement('a');
-                link.download = '텐카_결과물_animated.gif';
-                link.href = URL.createObjectURL(blob);
-                link.click();
-                URL.revokeObjectURL(link.href);
-                URL.revokeObjectURL(workerUrl);
-
-                btn.textContent = originalText;
-                btn.disabled = false;
-
-                if(isMobile) {
-                    states.none.scale = prevScale; states.none.x = prevX; states.none.y = prevY;
-                    updateTransform('none');
-                }
-                updateVisibility();
-            });
-
-            gif.render();
-
-        } catch (error) {
-            console.error('GIF 생성 오류:', error);
-            alert('GIF 생성 실패: ' + error.message);
-            btn.textContent = originalText;
-            btn.disabled = false;
-            
-            if(isMobile) {
-                states.none.scale = prevScale; states.none.x = prevX; states.none.y = prevY;
-                updateTransform('none');
-            }
-            updateVisibility();
-        }
-    });
+    }
 </script>
+
 </body>
 </html>
