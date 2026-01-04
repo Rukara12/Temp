@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>텐카 템플릿 - 에디터</title>
     <style>
-        /* [1] 웹폰트 정의 - 기존 유지 */
+        /* [1] 웹폰트 정의 */
         @font-face {
             font-family: 'PyeongtaekSunset';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408@1.0/PTNoeulL.woff2') format('woff2');
@@ -19,7 +19,7 @@
             font-display: swap;
         }
 
-        /* [2] 레이아웃 스타일 수정 */
+        /* [2] 레이아웃 스타일 */
         body { 
             margin: 0; padding: 0; 
             font-family: 'PyeongtaekSunset', sans-serif; 
@@ -30,14 +30,12 @@
             transition: all 0.3s ease;
         }
 
-        /* 모바일 모드 스타일 */
         body.mobile-mode {
             flex-direction: column;
             overflow-y: auto;
             height: auto;
         }
 
-        /* 사이드바 공통 */
         .sidebar {
             width: 300px;
             background: #ffffff;
@@ -62,7 +60,6 @@
             overflow-y: visible;
         }
 
-        /* 메인 작업 영역 */
         .main-content {
             flex: 1;
             display: flex;
@@ -81,7 +78,6 @@
             background: #ced4da;
         }
 
-        /* 컨트롤 그룹 스타일 */
         .control-section {
             margin-bottom: 25px;
             padding-bottom: 15px;
@@ -97,7 +93,6 @@
             align-items: center;
         }
 
-        /* 기존 요소 스타일 정돈 */
         #meme-container {
             position: relative;
             width: 1024px;
@@ -111,12 +106,10 @@
             flex-shrink: 0;
         }
 
-        /* 모바일 모드 시 컨테이너 크기 자동 조절 */
         body.mobile-mode #meme-container {
-            transform: scale(0.35); /* 기본 배율, JS에서 동적 계산 */
+            transform: scale(0.35); 
         }
 
-        /* 버튼 및 입력창 디자인 개선 */
         button { 
             width: 100%;
             padding: 10px; 
@@ -150,7 +143,6 @@
 
         .hint { color: #868e96; font-size: 12px; margin-top: 10px; line-height: 1.4; }
         
-        /* 기존 기능 유지용 CSS */
         .photo-layer { position: absolute; overflow: hidden; transition: opacity 0.2s; }
         #layer-photo-1 { z-index: 1; top: 0px; left: 200px; width: 700px; height: 440px; }
         #layer-photo-2 { z-index: 2; top: 470px; left: 531px; width: 90px; height: 150px; }
@@ -166,7 +158,6 @@
         .slider-item input[type="range"] { width: 100px; }
         .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; }
 
-        /* 반응형 스케일 유지 */
         @media screen and (max-width: 1400px) {
             body:not(.mobile-mode) #meme-container { transform: scale(0.8); }
         }
@@ -270,6 +261,7 @@
 
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+
 <script>
     const maxFontSize = 42;
     const minFontSize = 12;
@@ -287,12 +279,13 @@
     let history = [];
     let historyIndex = -1;
 
+    // 5. saveState 함수에 GIF 정보 저장 추가
     function saveState() {
         const snapshot = {
             layers: Object.keys(states).map(id => ({
                 id, x: states[id].x, y: states[id].y, scale: states[id].scale,
                 rotate: states[id].rotate, flip: states[id].flip, src: states[id].el ? states[id].el.src : null,
-                isGif: states[id].isGif, gifSrc: states[id].gifSrc
+                isGif: states[id].isGif, gifSrc: states[id].gifSrc // GIF 정보 추가
             })),
             bubbles: Array.from(document.querySelectorAll('.bubble')).map(b => ({
                 id: b.id, html: b.innerHTML, fontSize: b.style.fontSize
@@ -315,11 +308,12 @@
         if (historyIndex < history.length - 1) applyState(JSON.parse(history[++historyIndex]));
     }
 
+    // 6. applyState 함수에 GIF 정보 복원 추가
     function applyState(data) {
         data.layers.forEach(l => {
             const s = states[l.id];
             s.x = l.x; s.y = l.y; s.scale = l.scale; s.rotate = l.rotate; s.flip = l.flip;
-            s.isGif = l.isGif; s.gifSrc = l.gifSrc;
+            s.isGif = l.isGif; s.gifSrc = l.gifSrc; // GIF 정보 복원
             if (l.id !== 'none' && l.src) { s.el.src = l.src; s.el.style.display = 'block'; }
             updateTransform(l.id);
         });
@@ -454,6 +448,7 @@
         else alert('검색어를 입력해주세요.');
     });
 
+    // 3. States 객체에 GIF 속성 추가
     const states = {
         none: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('meme-container') },
         1: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-1'), isGif: false, gifSrc: null },
@@ -508,11 +503,12 @@
         s.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.scale}) rotate(${s.rotate}deg) scaleX(${s.flip})`;
     }
 
+    // 4. setupUpload 함수에 GIF 감지 로직 추가
     function setupUpload(id) {
         document.getElementById(`img-input-${id}`).addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                const isGif = file.type === 'image/gif';
+                const isGif = file.type === 'image/gif';  // GIF 감지
                 states[id].isGif = isGif;
                 
                 const reader = new FileReader();
@@ -636,12 +632,11 @@
         });
     });
 
-    // GIF 저장 기능 추가
+    // 7. GIF 저장 기능 (메인 함수)
     document.getElementById('save-gif-btn').addEventListener('click', async function() {
         const btn = this;
         const originalText = btn.textContent;
         
-        // GIF가 하나라도 있는지 확인
         const hasGif = [1, 2, 3].some(id => states[id].isGif && states[id].gifSrc);
         
         if (!hasGif) {
@@ -668,7 +663,6 @@
         bg.style.opacity = '1'; layers.forEach(l => l.style.opacity = '1'); bubbles.forEach(b => b.style.opacity = '1');
 
         try {
-            // GIF 프레임 추출을 위한 준비
             const gifImages = [];
             const gifPromises = [];
             
@@ -693,7 +687,6 @@
             
             await Promise.all(gifPromises);
 
-            // GIF 설정
             const gif = new GIF({
                 workers: 2,
                 quality: 10,
@@ -702,13 +695,10 @@
                 workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
             });
 
-            // 프레임 수와 딜레이 설정 (20프레임으로 증가하여 더 부드러운 애니메이션)
             const frameCount = 20;
-            const frameDelay = 100; // 100ms per frame
+            const frameDelay = 100; 
 
             for (let i = 0; i < frameCount; i++) {
-                // GIF 애니메이션 효과 시뮬레이션
-                // 실제로는 원본 GIF가 자동으로 애니메이션되므로 여러 프레임 캡처
                 await new Promise(resolve => setTimeout(resolve, 50));
                 
                 const canvas = await html2canvas(container, { 
@@ -720,8 +710,6 @@
                 });
 
                 gif.addFrame(canvas, { delay: frameDelay });
-                
-                // 진행상황 표시
                 btn.textContent = `GIF 생성 중... ${Math.round((i + 1) / frameCount * 100)}%`;
             }
 
@@ -757,3 +745,6 @@
             updateVisibility();
         }
     });
+</script>
+</body>
+</html>
