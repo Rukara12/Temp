@@ -380,18 +380,19 @@
         canvas.requestRenderAll();
     }
 
+    // [버그 수정] GIF 레이어 청소 시 DOM 컨테이너까지 완벽하게 제거
     function cleanupLayer(layerKey) {
         if (!layers[layerKey]) return;
         canvas.remove(layers[layerKey]);
         const gifIdx = activeGifs.findIndex(g => g.fabricObj === layers[layerKey]);
         if (gifIdx > -1) {
             const gifData = activeGifs[gifIdx];
-            // [수정] libgif가 생성한 wrapper까지 확실히 제거
-            if (gifData.tempImgTag && gifData.tempImgTag.parentNode) {
-                const wrapper = gifData.tempImgTag.parentNode;
-                if (wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
-            }
             if (gifData.superGif) gifData.superGif.pause();
+            
+            // GIF 격리용 컨테이너를 제거하여 UI 밖 중복 생성 버그 해결
+            if (gifData.container && gifData.container.parentNode) {
+                gifData.container.parentNode.removeChild(gifData.container);
+            }
             activeGifs.splice(gifIdx, 1);
         }
         layers[layerKey] = null;
@@ -409,27 +410,37 @@
         reader.readAsDataURL(file);
     }
 
+    // [버그 수정] GIF 로드 시 격리된 컨테이너를 사용하여 UI 중복 및 누적 방지
     function loadGif(dataUrl, layerKey) {
+        // 격리용 숨김 컨테이너 생성
+        const container = document.createElement('div');
+        container.className = 'gif-isolation-container';
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '-9999px';
+        container.style.visibility = 'hidden';
+        container.style.width = '0px';
+        container.style.height = '0px';
+        container.style.overflow = 'hidden';
+        document.body.appendChild(container);
+
         const imgTag = document.createElement('img');
         imgTag.src = dataUrl;
-        
-        // [롤백 및 재수정] 컨테이너 방식 대신 Off-screen 배치로 중복 버그 해결
-        imgTag.style.position = 'absolute';
-        imgTag.style.left = '-9999px';
-        imgTag.style.top = '-9999px';
-        document.body.appendChild(imgTag);
+        container.appendChild(imgTag);
 
         const rubbableGif = new SuperGif({ gif: imgTag, auto_play: false });
         rubbableGif.load(function() {
-            // SuperGif 로드 완료 시 생성되는 wrapper div를 숨겨서 화면에 안 보이게 처리
-            if (imgTag.parentNode) {
-                imgTag.parentNode.style.display = 'none';
-            }
-
             const gifCanvas = rubbableGif.get_canvas();
             const fabricImg = new fabric.Image(gifCanvas, { objectCaching: false });
             setupLayerObj(fabricImg, layerKey);
-            activeGifs.push({ fabricObj: fabricImg, superGif: rubbableGif, canvasEl: gifCanvas, tempImgTag: imgTag });
+            
+            // container 참조를 함께 저장하여 추후 삭제 시 활용
+            activeGifs.push({ 
+                fabricObj: fabricImg, 
+                superGif: rubbableGif, 
+                canvasEl: gifCanvas, 
+                container: container 
+            });
             rubbableGif.play();
         });
     }
@@ -692,7 +703,6 @@
                 g.fabricObj.dirty = true;
             });
             
-            // [수정 유지] 정확한 캔버스 크기(1:1 비율) 캡처로 잘림 방지
             const frameCanvas = canvas.toCanvasElement(1);
             gif.addFrame(frameCanvas, { delay: frameDelay, copy: true });
             await new Promise(r => setTimeout(r, 0));
