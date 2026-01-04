@@ -248,8 +248,8 @@
         <div id="logo-border-controls" style="display: none; margin-top: 10px; font-size: 13px;">
             <div class="slider-item">
                 두께: 
-                <input type="range" id="logo-border-width" min="0" step="0.5" max="5" value="2.5">
-                <input type="number" id="logo-border-num" class="num-input" value="2.5" step="0.5">
+                <input type="range" id="logo-border-width" min="0" step="0.01" max="5" value="2.5">
+                <input type="number" id="logo-border-num" class="num-input" value="2.5" step="0.01">
             </div>
             <div class="slider-item">
                 색상: <input type="color" id="logo-border-color" value="#000000">
@@ -357,12 +357,12 @@
     }
 
     function initTextLayers() {
-        // [누락 수정] padding: 15 추가
         const commonStyle = {
             fontFamily: 'PyeongtaekSunset', fontWeight: 'bold', textAlign: 'center',
             fill: '#000000', lineHeight: 1.2, originX: 'left', originY: 'top',
-            editable: true, splitByGrapheme: true, fontSize: 42,
-            padding: 15 // 원본 CSS와 동일한 패딩
+            editable: true, splitByGrapheme: true, 
+            fontSize: 55, // stop.html 초기값과 동기화
+            padding: 15
         };
 
         const createText = (text, l, t, w, h, key) => {
@@ -370,6 +370,7 @@
                 ...commonStyle, left: l, top: t, width: w, height: h, fixedHeight: h
             });
             tBox._layerKey = key;
+            tBox._originalTop = t; // 수직 정렬을 위한 기준점 저장
             layers[key] = tBox;
             canvas.add(tBox);
             tBox.on('changed', () => { 
@@ -454,20 +455,17 @@
 
     function setupLayerObj(obj, layerKey) {
         let def = { left: 0, top: 0 };
-        // [누락 수정] 마스킹(clipPath) 적용
         if (clipRects[layerKey]) {
             def = {
                 left: clipRects[layerKey].left + clipRects[layerKey].width / 2,
                 top: clipRects[layerKey].top + clipRects[layerKey].height / 2
             };
             
-            // 이미지 중앙 정렬을 위한 초기 좌표 설정
             obj.set({
                 originX: 'center', originY: 'center',
                 left: def.left, top: def.top
             });
 
-            // 마스킹 영역 설정 (absolutePositioned: true 필수)
             obj.clipPath = new fabric.Rect({
                 left: clipRects[layerKey].left,
                 top: clipRects[layerKey].top,
@@ -571,7 +569,6 @@
 
     // --- 6. 텍스트, 로고 효과 및 붙여넣기 정제 ---
     
-    // [누락 수정] 텍스트 붙여넣기 시 서식 제거 (Sanitization)
     window.addEventListener('paste', function(e) {
         const activeObj = canvas.getActiveObject();
         if (activeObj && activeObj.type === 'textbox' && activeObj.isEditing) {
@@ -588,17 +585,32 @@
     }
 
     function autoResizeFont(textbox) {
-        if (!document.getElementById('auto-font-toggle').checked) return;
         if (!textbox || !textbox.fixedHeight) return;
 
-        const maxFontSize = 42, minFontSize = 12;
-        let size = maxFontSize;
-        textbox.set('fontSize', size);
-        while (textbox.calcTextHeight() > textbox.fixedHeight && size > minFontSize) {
-            size -= 1;
+        // 1. 폰트 크기 자동 조절
+        if (document.getElementById('auto-font-toggle').checked) {
+            const maxFontSize = 42, minFontSize = 12;
+            let size = maxFontSize;
             textbox.set('fontSize', size);
+            while (textbox.calcTextHeight() > textbox.fixedHeight && size > minFontSize) {
+                size -= 1;
+                textbox.set('fontSize', size);
+            }
+            syncFontControls(textbox);
         }
-        syncFontControls(textbox);
+
+        // 2. 수직 중앙 정렬 (flexbox: center 유사 동작)
+        const textHeight = textbox.calcTextHeight();
+        const boxHeight = textbox.fixedHeight;
+        const originalTop = textbox._originalTop || textbox.top;
+
+        if (textHeight < boxHeight) {
+            const yOffset = (boxHeight - textHeight) / 2;
+            textbox.set('top', originalTop + yOffset);
+        } else {
+            textbox.set('top', originalTop);
+        }
+        
         canvas.requestRenderAll();
     }
 
@@ -629,13 +641,15 @@
         }
     }
 
-    // [누락 수정] 로고 테두리 구현 (Hard Shadow 방식)
     function updateLogoEffects() {
         if (!layers.img3) return;
         const shadowOn = document.getElementById('logo-shadow-toggle').checked;
         const borderOn = document.getElementById('logo-border-toggle').checked;
         const borderWidth = parseFloat(document.getElementById('logo-border-width').value);
         const borderColor = document.getElementById('logo-border-color').value;
+
+        // 기존 필터 초기화
+        layers.img3.shadow = null;
 
         if (borderOn && borderWidth > 0) {
             // Hard Shadow로 테두리 효과 모방 (blur 0)
@@ -647,8 +661,6 @@
             }));
         } else if (shadowOn) {
             layers.img3.set('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.9)', blur: 5, offsetX: 5, offsetY: 5 }));
-        } else {
-            layers.img3.set('shadow', null);
         }
         canvas.requestRenderAll();
         saveHistory();
@@ -673,7 +685,7 @@
     let stateHistory = [];
     let historyStep = -1;
     let isHistoryLocked = false;
-    const SAVE_PROPS = ['id', 'fixedHeight', 'selectable', 'evented', '_layerKey', '_originalState', 'padding'];
+    const SAVE_PROPS = ['id', 'fixedHeight', 'selectable', 'evented', '_layerKey', '_originalState', 'padding', '_originalTop'];
 
     function saveHistory() {
         if (isHistoryLocked) return;
@@ -710,7 +722,6 @@
                 if (obj._layerKey) {
                     layers[obj._layerKey] = obj;
                     
-                    // [누락 수정] 히스토리 복구 시 ClipPath 재적용
                     if(clipRects[obj._layerKey]) {
                         obj.clipPath = new fabric.Rect({
                             left: clipRects[obj._layerKey].left,
@@ -741,6 +752,13 @@
         setFocusMode(null);
         canvas.requestRenderAll();
         
+        // 모바일 모드 스케일링 영향 제거
+        const wrapper = document.getElementById('canvas-wrapper');
+        const originalTransform = wrapper.style.transform;
+        const originalMargin = wrapper.style.marginTop;
+        wrapper.style.transform = 'none';
+        wrapper.style.marginTop = '0';
+        
         const loading = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
         loading.style.display = 'flex';
@@ -752,6 +770,10 @@
                 link.download = '텐카_결과물.png';
                 link.href = dataURL;
                 link.click();
+                
+                // UI 복구
+                wrapper.style.transform = originalTransform;
+                wrapper.style.marginTop = originalMargin;
                 loading.style.display = 'none';
             }, 100);
             return;
@@ -787,6 +809,10 @@
             gif.addFrame(canvas.getElement(), { delay: frameDelay, copy: true });
             await new Promise(r => setTimeout(r, 0));
         }
+        
+        // 캡처 완료 후 UI 즉시 복구
+        wrapper.style.transform = originalTransform;
+        wrapper.style.marginTop = originalMargin;
         
         loadingText.innerText = "인코딩 중...";
         gif.on('finished', function(blob) {
@@ -838,7 +864,6 @@
                 }
             });
             canvas.requestRenderAll();
-            // [누락 수정] 폰트 적용 알림 추가
             alert('새로운 폰트가 적용되었습니다.');
         };
         reader.readAsArrayBuffer(file);
@@ -855,4 +880,4 @@
 
 </script>
 </body>
-</html>
+</html>```
