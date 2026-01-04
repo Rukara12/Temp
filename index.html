@@ -253,6 +253,19 @@
         </div>
     </div>
 
+    <div class="control-section">
+        <div class="section-title">🎞️ GIF 저장 설정</div>
+        <div class="slider-item">
+            프레임 수: 
+            <input type="number" id="gif-frames-input" class="num-input" value="0" style="width: 60px;">
+        </div>
+        <div class="slider-item">
+            지연 시간(ms): 
+            <input type="number" id="gif-delay-input" class="num-input" value="0" style="width: 60px;">
+        </div>
+        <div class="hint">0 입력 시 원본 GIF 속성을 따릅니다.</div>
+    </div>
+
     <div style="margin-top: auto;">
         <button class="issue-btn" onclick="window.open('https://github.com/Rukara12/Tenka-ZZANG-Template/tree/main', '_blank');">이슈 보고</button>
         <div style="display: flex; gap: 5px; margin-bottom: 5px;">
@@ -380,7 +393,6 @@
         canvas.requestRenderAll();
     }
 
-    // [버그 수정] GIF 레이어 청소 시 DOM 컨테이너까지 완벽하게 제거
     function cleanupLayer(layerKey) {
         if (!layers[layerKey]) return;
         canvas.remove(layers[layerKey]);
@@ -388,8 +400,6 @@
         if (gifIdx > -1) {
             const gifData = activeGifs[gifIdx];
             if (gifData.superGif) gifData.superGif.pause();
-            
-            // GIF 격리용 컨테이너를 제거하여 UI 밖 중복 생성 버그 해결
             if (gifData.container && gifData.container.parentNode) {
                 gifData.container.parentNode.removeChild(gifData.container);
             }
@@ -410,17 +420,11 @@
         reader.readAsDataURL(file);
     }
 
-    // [버그 수정] GIF 로드 시 격리된 컨테이너를 사용하여 UI 중복 및 누적 방지
     function loadGif(dataUrl, layerKey) {
-        // 격리용 숨김 컨테이너 생성
         const container = document.createElement('div');
-        container.className = 'gif-isolation-container';
-        container.style.position = 'fixed';
-        container.style.left = '-9999px';
-        container.style.top = '-9999px';
-        container.style.visibility = 'hidden';
-        container.style.width = '0px';
-        container.style.height = '0px';
+        container.style.position = 'fixed'; container.style.left = '-9999px';
+        container.style.top = '-9999px'; container.style.visibility = 'hidden';
+        container.style.width = '0px'; container.style.height = '0px';
         container.style.overflow = 'hidden';
         document.body.appendChild(container);
 
@@ -433,14 +437,7 @@
             const gifCanvas = rubbableGif.get_canvas();
             const fabricImg = new fabric.Image(gifCanvas, { objectCaching: false });
             setupLayerObj(fabricImg, layerKey);
-            
-            // container 참조를 함께 저장하여 추후 삭제 시 활용
-            activeGifs.push({ 
-                fabricObj: fabricImg, 
-                superGif: rubbableGif, 
-                canvasEl: gifCanvas, 
-                container: container 
-            });
+            activeGifs.push({ fabricObj: fabricImg, superGif: rubbableGif, canvasEl: gifCanvas, container: container });
             rubbableGif.play();
         });
     }
@@ -561,10 +558,7 @@
 
         if (borderOn && borderWidth > 0) {
             layers.img3.shadow = new fabric.Shadow({
-                color: borderColor,
-                blur: borderWidth, 
-                offsetX: 0,
-                offsetY: 0
+                color: borderColor, blur: borderWidth, offsetX: 0, offsetY: 0
             });
         } else {
             layers.img3.shadow = null;
@@ -575,10 +569,7 @@
 
         if (shadowOn) {
             layers.img3.filters.push(new fabric.Image.filters.DropShadow({
-                color: 'rgba(0,0,0,0.7)',
-                blur: 10,
-                offsetX: 5,
-                offsetY: 5
+                color: 'rgba(0,0,0,0.7)', blur: 10, offsetX: 5, offsetY: 5
             }));
         }
 
@@ -650,16 +641,12 @@
         resetAllOpacities();
 
         const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const dateStr = `${year}${month}${day}`;
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 
         const wrapper = document.getElementById('canvas-wrapper');
         const originalTransform = wrapper.style.transform;
         const originalMargin = wrapper.style.marginTop;
-        wrapper.style.transform = 'none';
-        wrapper.style.marginTop = '0';
+        wrapper.style.transform = 'none'; wrapper.style.marginTop = '0';
         const loading = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
         loading.style.display = 'flex';
@@ -669,28 +656,36 @@
                 const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 });
                 const link = document.createElement('a');
                 link.download = `텐카_결과물_${dateStr}.png`;
-                link.href = dataURL;
-                link.click();
-                wrapper.style.transform = originalTransform;
-                wrapper.style.marginTop = originalMargin;
+                link.href = dataURL; link.click();
+                wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
                 loading.style.display = 'none';
             }, 100);
             return;
         }
 
+        // [새로운 지시사항] 사용자 입력값 읽기
+        let userMaxFrames = parseInt(document.getElementById('gif-frames-input').value);
+        let userFrameDelay = parseInt(document.getElementById('gif-delay-input').value);
+
         loadingText.innerText = "프레임 추출 중...";
         let mainGif = activeGifs[0];
-        let maxFrames = 0;
+        let calculatedMaxFrames = 0;
         activeGifs.forEach(g => {
             const len = g.superGif.get_length();
-            if (len > maxFrames) { maxFrames = len; mainGif = g; }
+            if (len > calculatedMaxFrames) { calculatedMaxFrames = len; mainGif = g; }
         });
 
-        let frameDelay = 100;
-        try {
-            const frames = mainGif.superGif.get_frames(); 
-            if(frames && frames.length > 0 && frames[0].delay) frameDelay = frames[0].delay * 10;
-        } catch(e) {}
+        // 프레임 수 결정: 입력값이 있으면 입력값, 없으면 계산값
+        const maxFrames = userMaxFrames > 0 ? userMaxFrames : calculatedMaxFrames;
+
+        // 지연 시간 결정: 입력값이 있으면 입력값, 없으면 원본값 추출
+        let frameDelay = userFrameDelay > 0 ? userFrameDelay : 100;
+        if (userFrameDelay <= 0) {
+            try {
+                const frames = mainGif.superGif.get_frames(); 
+                if(frames && frames.length > 0 && frames[0].delay) frameDelay = frames[0].delay * 10;
+            } catch(e) {}
+        }
 
         const gif = new GIF({ workers: 4, quality: 10, width: 1024, height: 765, workerScript: workerUrl });
         activeGifs.forEach(g => g.superGif.pause());
@@ -702,14 +697,12 @@
                 g.superGif.move_to(i % len);
                 g.fabricObj.dirty = true;
             });
-            
             const frameCanvas = canvas.toCanvasElement(1);
             gif.addFrame(frameCanvas, { delay: frameDelay, copy: true });
             await new Promise(r => setTimeout(r, 0));
         }
         
-        wrapper.style.transform = originalTransform;
-        wrapper.style.marginTop = originalMargin;
+        wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
         loadingText.innerText = "인코딩 중...";
         gif.on('finished', function(blob) {
             const link = document.createElement('a');
