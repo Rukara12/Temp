@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>텐카 템플릿 - 에디터</title>
+    
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/build/gifshot.min.js"></script>
+
     <style>
         /* [1] 웹폰트 정의 - 기존 유지 */
         @font-face {
@@ -27,7 +31,7 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
-            transition: all 0.3s access;
+            transition: all 0.3s ease;
         }
 
         /* 모바일 모드 스타일 */
@@ -295,12 +299,10 @@
     </div>
 </div>
 
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js"></script>
 <script>
     const maxFontSize = 42;
     const minFontSize = 12;
-    let hasDynamicImage = false; // [추가] 동적 이미지 포함 여부 플래그
+    let hasDynamicImage = false; 
 
     function adjustFontSize(el) {
         if (!document.getElementById('auto-font-toggle').checked) return;
@@ -538,7 +540,6 @@
         document.getElementById(`img-input-${id}`).addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                // [추가] 동적 이미지 체크
                 if (file.type === 'image/gif' || file.type === 'image/webp') {
                     hasDynamicImage = true;
                 }
@@ -634,7 +635,6 @@
         updateTransform(id); triggerHistorySave();
     }, { passive: false });
 
-    // [수정] 저장 버튼 클릭 이벤트
     document.getElementById('save-btn').addEventListener('click', function() {
         if (hasDynamicImage) {
             document.getElementById('save-modal').style.display = 'flex';
@@ -643,13 +643,18 @@
         }
     });
 
-    // [추가] 모달 제어 및 파일 저장 로직 분기
     function closeModal() {
         document.getElementById('save-modal').style.display = 'none';
         document.getElementById('save-progress').style.display = 'none';
     }
 
     async function processSave(format) {
+        // [안전장치] gifshot 라이브러리 로드 확인
+        if (format !== 'png' && typeof gifshot === 'undefined') {
+            alert("움짤 생성 라이브러리가 아직 로드되지 않았거나 인터넷 연결에 문제가 있습니다. 잠시 후 다시 시도하거나 인터넷을 확인해주세요.");
+            return;
+        }
+
         const bg = document.getElementById('background-layer');
         const layers = [1, 2, 3].map(i => document.getElementById(`layer-photo-${i}`));
         const bubbles = document.querySelectorAll('.bubble');
@@ -658,7 +663,6 @@
         const prevX = states.none.x;
         const prevY = states.none.y;
 
-        // UI 설정 고정
         if(isMobile) {
             states.none.scale = 1.0; states.none.x = 0; states.none.y = 0;
             updateTransform('none');
@@ -674,35 +678,42 @@
                 finalizeSave();
             });
         } else {
-            // 움짤(GIF/WebP) 저장 로직
             const progress = document.getElementById('save-progress');
             progress.style.display = 'block';
             
-            const frames = [];
-            const frameCount = 15; // 캡처할 프레임 수
-            
-            for (let i = 0; i < frameCount; i++) {
-                const canvas = await html2canvas(container, { scale: 1.2, useCORS: true, logging: false });
-                frames.push(canvas.toDataURL('image/png'));
-                await new Promise(r => setTimeout(r, 100)); // 100ms 간격으로 캡처
-            }
-
-            gifshot.createGIF({
-                images: frames,
-                gifWidth: 1024,
-                gifHeight: 765,
-                interval: 0.1,
-                numFrames: frameCount
-            }, function (obj) {
-                if (!obj.error) {
-                    const link = document.createElement('a');
-                    link.download = `텐카_결과물.${format}`;
-                    link.href = obj.image;
-                    link.click();
+            try {
+                const frames = [];
+                const frameCount = 12; // 인코딩 부하를 줄이기 위해 12프레임으로 조정
+                
+                for (let i = 0; i < frameCount; i++) {
+                    const canvas = await html2canvas(container, { scale: 1.0, useCORS: true, logging: false });
+                    frames.push(canvas.toDataURL('image/png'));
+                    await new Promise(r => setTimeout(r, 150)); 
                 }
+
+                gifshot.createGIF({
+                    images: frames,
+                    gifWidth: 1024,
+                    gifHeight: 765,
+                    interval: 0.15,
+                    numFrames: frameCount
+                }, function (obj) {
+                    if (!obj.error) {
+                        const link = document.createElement('a');
+                        link.download = `텐카_결과물.${format}`;
+                        link.href = obj.image;
+                        link.click();
+                    } else {
+                        alert("GIF 생성 중 오류 발생: " + obj.errorMsg);
+                    }
+                    finalizeSave();
+                    closeModal();
+                });
+            } catch (err) {
+                alert("캡처 중 오류가 발생했습니다: " + err);
                 finalizeSave();
                 closeModal();
-            });
+            }
         }
 
         function finalizeSave() {
