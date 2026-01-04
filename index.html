@@ -256,8 +256,8 @@
     <div class="control-section">
         <div class="section-title">🎞️ GIF 저장 설정</div>
         <div class="slider-item">
-            프레임 수: 
-            <input type="number" id="gif-frames-input" class="num-input" value="0" style="width: 60px;">
+            FPS: 
+            <input type="number" id="gif-fps-input" class="num-input" value="0" style="width: 60px;">
         </div>
         <div class="slider-item">
             지연 시간(ms): 
@@ -663,29 +663,38 @@
             return;
         }
 
-        // [새로운 지시사항] 사용자 입력값 읽기
-        let userMaxFrames = parseInt(document.getElementById('gif-frames-input').value);
+        // [수정] 사용자 입력값 읽기 (FPS 기반)
+        let userFps = parseFloat(document.getElementById('gif-fps-input').value);
         let userFrameDelay = parseInt(document.getElementById('gif-delay-input').value);
 
         loadingText.innerText = "프레임 추출 중...";
         let mainGif = activeGifs[0];
         let calculatedMaxFrames = 0;
+        let originalDelay = 100;
+
         activeGifs.forEach(g => {
             const len = g.superGif.get_length();
             if (len > calculatedMaxFrames) { calculatedMaxFrames = len; mainGif = g; }
         });
 
-        // 프레임 수 결정: 입력값이 있으면 입력값, 없으면 계산값
-        const maxFrames = userMaxFrames > 0 ? userMaxFrames : calculatedMaxFrames;
+        // 원본 지연 시간 추출
+        try {
+            const frames = mainGif.superGif.get_frames(); 
+            if(frames && frames.length > 0 && frames[0].delay) originalDelay = frames[0].delay * 10;
+        } catch(e) {}
 
-        // 지연 시간 결정: 입력값이 있으면 입력값, 없으면 원본값 추출
-        let frameDelay = userFrameDelay > 0 ? userFrameDelay : 100;
-        if (userFrameDelay <= 0) {
-            try {
-                const frames = mainGif.superGif.get_frames(); 
-                if(frames && frames.length > 0 && frames[0].delay) frameDelay = frames[0].delay * 10;
-            } catch(e) {}
+        // 최종 지연 시간 및 프레임 수 계산
+        let finalDelay = originalDelay;
+        if (userFps > 0) {
+            finalDelay = 1000 / userFps;
+        } else if (userFrameDelay > 0) {
+            finalDelay = userFrameDelay;
         }
+
+        // 원본 재생 시간(ms) = 프레임 수 * 원본 지연 시간
+        const totalDuration = calculatedMaxFrames * originalDelay;
+        // 최종 캡처 프레임 수 = 원본 재생 시간 / 최종 지연 시간
+        const maxFrames = Math.max(1, Math.round(totalDuration / finalDelay));
 
         const gif = new GIF({ workers: 4, quality: 10, width: 1024, height: 765, workerScript: workerUrl });
         activeGifs.forEach(g => g.superGif.pause());
@@ -694,11 +703,14 @@
             loadingText.innerText = `프레임 캡처 (${i + 1}/${maxFrames})`;
             activeGifs.forEach(g => {
                 const len = g.superGif.get_length();
-                g.superGif.move_to(i % len);
+                // 원본의 진행률에 맞춰 프레임 이동
+                const progress = i / maxFrames;
+                const targetFrame = Math.floor(progress * len);
+                g.superGif.move_to(targetFrame % len);
                 g.fabricObj.dirty = true;
             });
             const frameCanvas = canvas.toCanvasElement(1);
-            gif.addFrame(frameCanvas, { delay: frameDelay, copy: true });
+            gif.addFrame(frameCanvas, { delay: finalDelay, copy: true });
             await new Promise(r => setTimeout(r, 0));
         }
         
