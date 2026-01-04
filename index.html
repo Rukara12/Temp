@@ -1,3 +1,5 @@
+--- START OF FILE canvas.html ---
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -373,6 +375,22 @@
             tBox._originalTop = t; // 수직 정렬을 위한 기준점 저장
             layers[key] = tBox;
             canvas.add(tBox);
+            
+            // [Fix] 스케일링(크기 조절) 시 폰트 깨짐 방지 및 재계산 로직 추가
+            tBox.on('scaling', function() {
+                const newWidth = this.width * this.scaleX;
+                const newHeight = this.height * this.scaleY;
+                
+                this.set({
+                    width: newWidth,
+                    height: newHeight,
+                    fixedHeight: newHeight,
+                    scaleX: 1,
+                    scaleY: 1
+                });
+                autoResizeFont(this);
+            });
+
             tBox.on('changed', () => { 
                 autoResizeFontDebounced(tBox); 
                 saveHistory(); 
@@ -880,4 +898,4 @@
 
 </script>
 </body>
-</html>```
+</html>
