@@ -410,7 +410,6 @@
         imgTag.src = dataUrl;
         imgTag.style.display = 'none';
         
-        // [수정] GIF 업로드 시 화면 옆에 이미지가 생기는 버그 수정 (숨겨진 컨테이너 사용)
         let hiddenContainer = document.getElementById('hidden-gif-container');
         if (!hiddenContainer) {
             hiddenContainer = document.createElement('div');
@@ -536,6 +535,7 @@
         });
     });
 
+    // [로고 효과 수정] 사각 외곽선 제거 및 PNG 투명 공백 제외한 테두리 추적 구현
     function updateLogoEffects() {
         if (!layers.img3) return;
         const shadowOn = document.getElementById('logo-shadow-toggle').checked;
@@ -543,23 +543,39 @@
         const borderWidth = parseFloat(document.getElementById('logo-border-width').value);
         const borderColor = document.getElementById('logo-border-color').value;
 
+        // 1. 기존 사각 테두리 속성 제거
+        layers.img3.set({
+            stroke: null,
+            strokeWidth: 0
+        });
+
+        // 2. 테두리 설정 (PNG 투명 공백 제외하고 픽셀 외곽선 따기)
+        // Fabric shadow를 오프셋 없이 blur를 이용해 투명도를 고려한 테두리 효과 구현
         if (borderOn && borderWidth > 0) {
-            layers.img3.set({ stroke: borderColor, strokeWidth: borderWidth, strokeUniform: true });
+            layers.img3.shadow = new fabric.Shadow({
+                color: borderColor,
+                blur: borderWidth, 
+                offsetX: 0,
+                offsetY: 0
+            });
         } else {
-            layers.img3.set({ stroke: null, strokeWidth: 0 });
+            layers.img3.shadow = null;
         }
+
+        // 3. 그림자 효과 설정 (PNG 투명 공백 제외하고 픽셀 그림자 따기)
+        if (!layers.img3.filters) layers.img3.filters = [];
+        layers.img3.filters = layers.img3.filters.filter(f => f.type !== 'DropShadow');
 
         if (shadowOn) {
-            layers.img3.set('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.7)', blur: 10, offsetX: 5, offsetY: 5 }));
-        } else {
-            layers.img3.set('shadow', null);
+            layers.img3.filters.push(new fabric.Image.filters.DropShadow({
+                color: 'rgba(0,0,0,0.7)',
+                blur: 10,
+                offsetX: 5,
+                offsetY: 5
+            }));
         }
 
-        if (layers.img3.filters) {
-            layers.img3.filters = layers.img3.filters.filter(f => f.type !== 'DropShadow');
-            layers.img3.applyFilters();
-        }
-
+        layers.img3.applyFilters();
         canvas.requestRenderAll();
         saveHistory();
     }
@@ -680,7 +696,6 @@
                 g.fabricObj.dirty = true;
             });
             
-            // [수정] GIF 저장 시 하단/좌측 잘림 버그 수정 (정확한 캔버스 크기 캡처)
             const frameCanvas = canvas.toCanvasElement(1);
             gif.addFrame(frameCanvas, { delay: frameDelay, copy: true });
             await new Promise(r => setTimeout(r, 0));
