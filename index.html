@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터 (Canvas + GIF)</title>
+    <title>텐카 템플릿 - 에디터 (Canvas + GIF 복구버전)</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -29,7 +29,6 @@
             overflow: hidden;
         }
 
-        /* 모바일 모드 스타일 */
         body.mobile-mode {
             flex-direction: column;
             overflow-y: auto;
@@ -119,7 +118,8 @@
         .upload-btn { background: #007bff; color: white; border: none; }
         .font-btn { background: #6c757d; color: white; border: none; }
         .history-btn { background: #6c757d; color: white; border: none; font-size: 12px; padding: 8px; flex: 1; }
-        
+        .issue-btn { background: #ffc107; color: #212529; border: none; margin-bottom: 5px; }
+
         .selector-box {
             background: #f8f9fa;
             padding: 12px;
@@ -138,7 +138,7 @@
         /* 폰트 컨트롤 */
         .slider-item { margin: 8px 0; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
         .slider-item input[type="range"] { width: 100px; }
-        .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; }
+        .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; text-align: center; }
 
         /* 로딩 오버레이 */
         #loading-overlay {
@@ -186,7 +186,7 @@
                 <button onclick="flipActiveObject()" style="font-size: 12px; padding: 5px;">반전</button>
             </div>
         </div>
-        <div class="hint">이미지를 직접 클릭하거나 라디오 버튼으로 선택 후 조작하세요.</div>
+        <div class="hint">이미지를 직접 클릭하거나 라디오 버튼으로 선택 후 조작하세요.<br>(사진 선택 시 배경이 흐려집니다)</div>
     </div>
 
     <div class="control-section">
@@ -220,9 +220,21 @@
         </label>
 
         <div id="manual-font-controls" style="display: none; margin-top: 10px;">
-            <div class="slider-item">좌상단: <input type="range" class="font-slider" data-id="text_tl" min="10" max="100" value="42"></div>
-            <div class="slider-item">좌하단: <input type="range" class="font-slider" data-id="text_bl" min="10" max="100" value="42"></div>
-            <div class="slider-item">우상단: <input type="range" class="font-slider" data-id="text_tr" min="10" max="100" value="42"></div>
+            <div class="slider-item">
+                좌상단: 
+                <input type="range" class="font-slider" data-id="text_tl" min="10" max="100" value="42">
+                <input type="number" class="num-input font-num" data-id="text_tl" value="42">
+            </div>
+            <div class="slider-item">
+                좌하단: 
+                <input type="range" class="font-slider" data-id="text_bl" min="10" max="100" value="42">
+                <input type="number" class="num-input font-num" data-id="text_bl" value="42">
+            </div>
+            <div class="slider-item">
+                우상단: 
+                <input type="range" class="font-slider" data-id="text_tr" min="10" max="100" value="42">
+                <input type="number" class="num-input font-num" data-id="text_tr" value="42">
+            </div>
         </div>
     </div>
 
@@ -231,15 +243,22 @@
         <label style="cursor:pointer; font-size: 14px; display: block; margin-bottom: 8px;"><input type="checkbox" id="logo-shadow-toggle"> 로고 그림자 효과</label>
         <label style="cursor:pointer; font-size: 14px; display: block;"><input type="checkbox" id="logo-border-toggle"> 로고 테두리 설정</label>
         <div id="logo-border-controls" style="display: none; margin-top: 10px; font-size: 13px;">
-            <div class="slider-item">두께: <input type="range" id="logo-border-width" min="0" step="0.5" max="10" value="0"></div>
-            <div class="slider-item">색상: <input type="color" id="logo-border-color" value="#000000"></div>
+            <div class="slider-item">
+                두께: 
+                <input type="range" id="logo-border-width" min="0" step="0.5" max="10" value="2.5">
+                <input type="number" id="logo-border-num" class="num-input" value="2.5" step="0.5">
+            </div>
+            <div class="slider-item">
+                색상: <input type="color" id="logo-border-color" value="#000000">
+            </div>
         </div>
     </div>
 
     <div style="margin-top: auto;">
+        <button class="issue-btn" onclick="window.open('https://github.com/Rukara12/Tenka-ZZANG-Template/tree/main', '_blank');">이슈 보고</button>
         <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-            <button class="history-btn" onclick="undo()">되돌리기</button>
-            <button class="history-btn" onclick="redo()">다시하기</button>
+            <button class="history-btn" onclick="undo()">되돌리기 (Ctrl+Z)</button>
+            <button class="history-btn" onclick="redo()">다시하기 (Ctrl+Y)</button>
         </div>
         <button class="save-btn" id="save-btn">최종 결과물 저장 (GIF/PNG)</button>
         <div class="hint" style="text-align: center;">GIF 포함 시 렌더링에 시간이 소요됩니다.</div>
@@ -248,16 +267,15 @@
 
 <!-- 라이브러리 로드 -->
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
-<!-- GIF 파싱을 위한 libgif (SuperGif) -->
 <script src="https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js"></script>
-<!-- GIF 생성을 위한 gif.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
 
 <script>
     // --- 1. Fabric Canvas 초기화 ---
     const canvas = new fabric.Canvas('c', {
-        preserveObjectStacking: true, // 선택 시 맨 위로 올라오는 동작 방지
-        selection: false // 다중 선택 방지
+        preserveObjectStacking: true,
+        selection: false, // 다중 선택 방지
+        allowTouchScrolling: false // 모바일 터치 시 스크롤 방지 (핀치줌 지원 위함)
     });
     
     // 레이어 관리 객체
@@ -265,24 +283,24 @@
         img1: null, // 말풍선 사진
         img2: null, // 핸드폰 사진
         img3: null, // 로고 사진
-        overlay: null, // 텐카 배경 (중간 레이어)
-        text_tl: null, // 텍스트
+        overlay: null, // 텐카 배경
+        text_tl: null,
         text_bl: null,
-        text_tr: null
+        text_tr: null,
+        placeholders: [] // 빈 영역 표시용
     };
 
-    // GIF 애니메이션 상태 관리
-    const activeGifs = []; // { fabricObj, superGif, canvasEl }
+    const activeGifs = [];
 
-    // --- 2. 기본 세팅 (배경, 텍스트) 로드 ---
-    // 폰트 로드 대기 후 실행
+    // --- 2. 기본 초기화 및 플레이스홀더 ---
     document.fonts.ready.then(() => {
         initCanvas();
     });
 
     function initCanvas() {
-        // 배경 이미지 (텐카.png) - 중간 오버레이 역할
-        // 기존 HTML 구조상: User Photos(z1-3) < Background(z4) < Text(z6)
+        createPlaceholders();
+        
+        // 배경 이미지 (텐카.png)
         fabric.Image.fromURL('tenka.png', function(img) {
             img.set({
                 left: 0, top: 0, selectable: false, evented: false,
@@ -290,141 +308,136 @@
             });
             layers.overlay = img;
             canvas.add(img);
-            canvas.sendToBack(img); // 일단 뒤로 보내고 나중에 조정
             initTextLayers();
-            createPlaceholders();
+            reorderLayers();
         }, { crossOrigin: 'anonymous' });
     }
 
-    // 빈 플레이스홀더(이미지 들어갈 자리) 생성 - 좌표값 유지
+    // 플레이스홀더: 이미지가 없을 때 위치를 알려주는 박스
     function createPlaceholders() {
-        // layer1: left 200, top 0, w 700, h 440
-        // layer2: left 531, top 470, w 90, h 150
-        // layer3: left 635, top 415, w 380, h 340
-        // 이미지가 없어도 Z-index 순서 유지를 위해 필요함. 
-        // Fabric에서는 객체를 추가한 순서대로 그려지므로, 
-        // UserLayer 1,2,3 -> Overlay -> Text 순서로 add 해야 함.
-        
-        // 하지만 사용자가 업로드할 때 동적으로 추가되므로, 
-        // 렌더링 시점에 sendToBack 등으로 순서를 제어합니다.
-        // reorderLayers() 함수에서 일괄 관리.
+        const createRect = (l, t, w, h, txt) => {
+            const rect = new fabric.Rect({
+                left: l, top: t, width: w, height: h,
+                fill: '#f8f9fa', stroke: '#ced4da', strokeWidth: 2, strokeDashArray: [5, 5],
+                selectable: false, evented: false
+            });
+            const text = new fabric.Text(txt, {
+                left: l + w/2, top: t + h/2, originX: 'center', originY: 'center',
+                fontSize: 16, fill: '#adb5bd', fontFamily: 'PyeongtaekSunset', selectable: false, evented: false
+            });
+            layers.placeholders.push(rect, text);
+            canvas.add(rect, text);
+        };
+        // 원본 좌표 기반
+        createRect(200, 0, 700, 440, "말풍선 사진 영역");
+        createRect(531, 470, 90, 150, "폰");
+        createRect(635, 415, 380, 340, "로고 영역");
     }
 
     function initTextLayers() {
         const commonStyle = {
-            fontFamily: 'PyeongtaekSunset',
-            fontWeight: 'bold',
-            textAlign: 'center',
-            fill: '#000000',
-            lineHeight: 1.2,
-            originX: 'left', originY: 'top',
-            editable: true,
-            splitByGrapheme: true,
-            fontSize: 42
+            fontFamily: 'PyeongtaekSunset', fontWeight: 'bold', textAlign: 'center',
+            fill: '#000000', lineHeight: 1.2, originX: 'left', originY: 'top',
+            editable: true, splitByGrapheme: true, fontSize: 42
         };
 
-        // Textbox는 자동 줄바꿈 지원
         layers.text_tl = new fabric.Textbox("텐카쨩 반박하는 내용···\n듣기 싫은 말···", {
-            ...commonStyle,
-            left: 1, top: 1, width: 215, height: 330,
-            fixedHeight: 330 // 커스텀 속성
+            ...commonStyle, left: 1, top: 1, width: 215, height: 330, fixedHeight: 330
         });
 
         layers.text_bl = new fabric.Textbox("나쨩 미안··· 잘 안 들려···\n아무튼 어쩌구 저쩌구 한데다\n이러저러하고 이래저래\n장점이 많아서 재밌는 게임이라는\n장황한 설명···", {
-            ...commonStyle,
-            left: 1, top: 420, width: 230, height: 350,
-            fixedHeight: 350
+            ...commonStyle, left: 1, top: 420, width: 230, height: 350, fixedHeight: 350
         });
 
         layers.text_tr = new fabric.Textbox("나쨩 이거 봐봐···!\n대충 어쩌구 저쩌구\n갓겜···!", {
-            ...commonStyle,
-            left: 810, top: 1, width: 215, height: 410,
-            fixedHeight: 410
+            ...commonStyle, left: 810, top: 1, width: 215, height: 410, fixedHeight: 410
         });
 
         [layers.text_tl, layers.text_bl, layers.text_tr].forEach(t => {
             canvas.add(t);
-            t.on('changed', () => {
-                autoResizeFont(t);
-                saveHistory();
-            });
-            // 텍스트 선택 시 폰트 슬라이더 업데이트
-            t.on('selected', () => {
-                // 어떤 텍스트인지 식별 불가하므로 data-id 매핑 필요하나 생략
-            });
+            t.on('changed', () => { autoResizeFont(t); saveHistory(); });
         });
         
-        // 초기 폰트 리사이징
         autoResizeFont(layers.text_tl);
         autoResizeFont(layers.text_bl);
         autoResizeFont(layers.text_tr);
-        reorderLayers();
     }
 
-    // 레이어 순서 정렬 (가장 중요)
+    // 레이어 순서 및 플레이스홀더 관리
     function reorderLayers() {
-        if (layers.img1) canvas.sendToBack(layers.img1);
-        if (layers.img2) canvas.sendToBack(layers.img2);
-        // img3(로고)가 img1, img2보다 위에 있어야 하는가? 원본 CSS는 1, 2, 5(logo) 순.
-        // User defined order: 1 (z1), 2 (z2), 3 (z5), BG (z4?? No, BG overlays photos).
-        // 원본 CSS: BG(z4), Logo(z5). Logo is ON TOP of BG. Photos are UNDER BG.
+        // 1. 플레이스홀더 (항상 바닥)
+        layers.placeholders.forEach(o => o.sendToBack());
+
+        // 2. 사용자 사진 (img1, img2, img3)
+        // 로고(img3)는 CSS상 z-index 5, 텐카 오버레이는 4. 따라서 로고가 오버레이보다 위.
+        // 사진 1, 2는 오버레이(구멍) 밑.
+        if (layers.img1) layers.img1.moveTo(10); // 적당히 앞쪽 번호
+        if (layers.img2) layers.img2.moveTo(11);
         
-        // 수정된 로직: Photos < BG < Logo < Text
-        if (layers.img1) layers.img1.moveTo(0);
-        if (layers.img2) layers.img2.moveTo(1);
-        if (layers.overlay) layers.overlay.moveTo(2); // 배경이 사진을 덮음 (투명 영역으로 사진 보임)
-        if (layers.img3) layers.img3.moveTo(3); // 로고는 배경 위에 (원본 CSS z-index 5, BG z-index 4)
-        
+        // 3. 오버레이 (텐카)
+        if (layers.overlay) layers.overlay.moveTo(20);
+
+        // 4. 로고 (오버레이 위)
+        if (layers.img3) layers.img3.moveTo(30);
+
+        // 5. 텍스트 (최상단)
         [layers.text_tl, layers.text_bl, layers.text_tr].forEach(t => t.bringToFront());
+        
         canvas.requestRenderAll();
     }
 
-    // 자동 폰트 크기 조절
-    const maxFontSize = 42;
-    const minFontSize = 12;
+    // --- 3. 집중 모드 (Focus Mode) 복구 ---
+    function setFocusMode(activeObj) {
+        if (!layers.overlay) return;
+        
+        // 이미지(img1, img2)를 편집 중일 때만 텐카와 텍스트를 흐리게 함
+        const isPhoto = (activeObj === layers.img1 || activeObj === layers.img2);
+        const opacity = isPhoto ? 0.3 : 1.0;
 
-    function autoResizeFont(textbox) {
-        if (!document.getElementById('auto-font-toggle').checked) return;
+        layers.overlay.set('opacity', opacity);
+        [layers.text_tl, layers.text_bl, layers.text_tr].forEach(t => t.set('opacity', opacity));
         
-        // 텍스트 박스 높이가 fixedHeight를 넘어가면 폰트 줄임
-        if (!textbox.fixedHeight) return;
-
-        let size = maxFontSize;
-        textbox.set('fontSize', size);
-        
-        // Fabric Textbox 높이 계산: textbox.height * textbox.scaleY
-        // 하지만 Textbox는 내용에 따라 height가 늘어남.
-        // width는 고정.
-        
-        while (textbox.height > textbox.fixedHeight && size > minFontSize) {
-            size--;
-            textbox.set('fontSize', size);
-            // 강제 리플로우 같은 효과를 위해 너비 재설정
-            textbox.set('width', textbox.width); 
-        }
+        canvas.requestRenderAll();
     }
 
-    // --- 3. 이미지 및 GIF 처리 ---
+    canvas.on('selection:created', (e) => {
+        setFocusMode(e.selected[0]);
+        syncSelection(e.selected[0]);
+    });
+    canvas.on('selection:updated', (e) => {
+        setFocusMode(e.selected[0]);
+        syncSelection(e.selected[0]);
+    });
+    canvas.on('selection:cleared', () => {
+        setFocusMode(null);
+        document.querySelector('input[name="target"][value="none"]').checked = true;
+    });
 
-    // GIF 파싱 및 재생 루프
+    function syncSelection(obj) {
+        if (obj === layers.img1) document.querySelector('input[value="layer1"]').checked = true;
+        else if (obj === layers.img2) document.querySelector('input[value="layer2"]').checked = true;
+        else if (obj === layers.img3) document.querySelector('input[value="layer3"]').checked = true;
+        else document.querySelector('input[value="none"]').checked = true;
+    }
+
+
+    // --- 4. 이미지/GIF 처리 ---
     function handleImageUpload(file, layerKey) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const result = e.target.result;
-            
             // 기존 객체 제거
             if (layers[layerKey]) {
-                // GIF 목록에서 제거
                 const idx = activeGifs.findIndex(g => g.fabricObj === layers[layerKey]);
                 if (idx > -1) activeGifs.splice(idx, 1);
                 canvas.remove(layers[layerKey]);
             }
+            // 플레이스홀더 숨김 (간단히 opacity 처리)
+            layers.placeholders.forEach(p => p.set('opacity', 0));
 
             if (file.type === 'image/gif') {
-                // GIF 처리
                 loadGif(result, layerKey);
             } else {
-                // 일반 이미지 처리
                 fabric.Image.fromURL(result, function(img) {
                     setupLayerObj(img, layerKey);
                 });
@@ -436,75 +449,50 @@
     function loadGif(dataUrl, layerKey) {
         const imgTag = document.createElement('img');
         imgTag.src = dataUrl;
-        // SuperGif는 DOM 요소가 필요함
         imgTag.style.display = 'none';
         document.body.appendChild(imgTag);
 
         const rubbableGif = new SuperGif({ gif: imgTag, auto_play: false } );
         rubbableGif.load(function() {
-            // GIF 로드 완료
-            const gifCanvas = rubbableGif.get_canvas(); // 현재 프레임의 캔버스
-            
-            const fabricImg = new fabric.Image(gifCanvas, {
-                objectCaching: false // 애니메이션을 위해 캐싱 끔
-            });
-
+            const gifCanvas = rubbableGif.get_canvas();
+            const fabricImg = new fabric.Image(gifCanvas, { objectCaching: false });
             setupLayerObj(fabricImg, layerKey);
-            
-            // 애니메이션 목록에 등록
-            activeGifs.push({
-                fabricObj: fabricImg,
-                superGif: rubbableGif,
-                canvasEl: gifCanvas
-            });
-            
+            activeGifs.push({ fabricObj: fabricImg, superGif: rubbableGif, canvasEl: gifCanvas });
             rubbableGif.play();
-            // imgTag는 SuperGif 내부에서 처리되거나 canvas로 대체됨.
         });
     }
 
     function setupLayerObj(obj, layerKey) {
-        // 초기 위치 설정 (원본 CSS 참조)
-        let opts = {};
-        if (layerKey === 'img1') opts = { left: 200, top: 0 }; // 700x440 fit needed? No, user scales it.
-        if (layerKey === 'img2') opts = { left: 531, top: 470 };
-        if (layerKey === 'img3') opts = { left: 635, top: 415 };
+        let def = { left: 0, top: 0 };
+        // 초기 위치 복구 (중심점 기준 아님, 좌상단 기준 후 조정)
+        if (layerKey === 'img1') def = { left: 550, top: 220 }; // 200 + 350, 0 + 220 (Center)
+        if (layerKey === 'img2') def = { left: 576, top: 545 };
+        if (layerKey === 'img3') def = { left: 825, top: 585 };
 
         obj.set({
-            ...opts,
-            originX: 'center', originY: 'center' // 조작 편의를 위해 중심점 변경
+            originX: 'center', originY: 'center',
+            left: def.left, top: def.top
         });
+
+        // 크기 조정 (너무 크면 줄임)
+        if (obj.width > 500 && layerKey !== 'img1') obj.scaleToWidth(300);
         
-        // 중심점 기준으로 위치 보정
-        obj.set({
-            left: opts.left + (obj.width * obj.scaleX / 2),
-            top: opts.top + (obj.height * obj.scaleY / 2)
-        });
-
-        // 너무 크면 적당히 줄이기
-        if (obj.width > 500) obj.scaleToWidth(300);
-
         layers[layerKey] = obj;
+        
+        // 원본 좌표 저장 (초기화 기능을 위해)
+        obj._originalState = { left: def.left, top: def.top, scaleX: obj.scaleX, scaleY: obj.scaleY };
+
         canvas.add(obj);
         canvas.setActiveObject(obj);
-        
-        // 라디오 버튼 동기화
-        document.querySelector(`input[name="target"][value="layer${layerKey.slice(-1)}"]`).checked = true;
-        
         reorderLayers();
         saveHistory();
     }
 
-    // 애니메이션 루프
+    // GIF 렌더링 루프
     function renderLoop() {
         if (activeGifs.length > 0) {
             let dirty = false;
-            activeGifs.forEach(g => {
-                // SuperGif가 캔버스 내용을 업데이트함
-                // Fabric 객체에 "소스가 변했다"고 알려줌
-                g.fabricObj.dirty = true; 
-                dirty = true;
-            });
+            activeGifs.forEach(g => { g.fabricObj.dirty = true; dirty = true; });
             if (dirty) canvas.requestRenderAll();
         }
         requestAnimationFrame(renderLoop);
@@ -512,14 +500,8 @@
     requestAnimationFrame(renderLoop);
 
 
-    // --- 4. 이벤트 연결 ---
-    
-    // 업로드 버튼
-    document.getElementById('img-input-1').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img1'));
-    document.getElementById('img-input-2').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img2'));
-    document.getElementById('img-input-3').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img3'));
-
-    // 타겟 선택 라디오 버튼
+    // --- 5. 컨트롤 로직 (초기화, 회전, 반전) ---
+    // 라디오 버튼 선택 시
     document.querySelectorAll('input[name="target"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             const val = e.target.value;
@@ -532,25 +514,23 @@
         });
     });
 
-    // 캔버스 클릭 시 라디오 버튼 동기화
-    canvas.on('selection:created', syncSelection);
-    canvas.on('selection:updated', syncSelection);
-    canvas.on('selection:cleared', () => {
-        document.querySelector('input[name="target"][value="none"]').checked = true;
-    });
-
-    function syncSelection(e) {
-        const obj = e.selected[0];
-        if (obj === layers.img1) document.querySelector('input[value="layer1"]').checked = true;
-        else if (obj === layers.img2) document.querySelector('input[value="layer2"]').checked = true;
-        else if (obj === layers.img3) document.querySelector('input[value="layer3"]').checked = true;
-        else document.querySelector('input[value="none"]').checked = true;
-    }
-
-    // 조작 버튼
     window.resetActiveObject = () => {
         const obj = canvas.getActiveObject();
-        if(obj) { obj.scale(1); obj.rotate(0); obj.set('flipX', false); canvas.requestRenderAll(); saveHistory(); }
+        if(obj) {
+            // 위치까지 초기화 (저장된 상태가 있다면)
+            if (obj._originalState) {
+                obj.set({
+                    left: obj._originalState.left,
+                    top: obj._originalState.top,
+                    scaleX: obj._originalState.scaleX,
+                    scaleY: obj._originalState.scaleY
+                });
+            }
+            obj.rotate(0);
+            obj.set('flipX', false);
+            canvas.requestRenderAll();
+            saveHistory();
+        }
     };
     window.rotateActiveObject = () => {
         const obj = canvas.getActiveObject();
@@ -561,23 +541,66 @@
         if(obj) { obj.set('flipX', !obj.flipX); canvas.requestRenderAll(); saveHistory(); }
     };
 
-    // 모바일 모드
-    document.getElementById('mobile-mode-toggle').addEventListener('change', (e) => {
-        const wrapper = document.getElementById('canvas-wrapper');
-        if (e.target.checked) {
-            document.body.classList.add('mobile-mode');
-            // 스케일 계산
-            const scale = Math.min(window.innerWidth / 1050, 0.45);
-            wrapper.style.transform = `scale(${scale})`;
-            wrapper.style.marginTop = '-200px'; // 스케일 다운 시 여백 조정
-        } else {
-            document.body.classList.remove('mobile-mode');
-            wrapper.style.transform = 'scale(1)';
-            wrapper.style.marginTop = '0';
+    // --- 6. 폰트/로고 효과 및 UI 동기화 ---
+    const maxFontSize = 42, minFontSize = 12;
+
+    function autoResizeFont(textbox) {
+        if (!document.getElementById('auto-font-toggle').checked) return;
+        if (!textbox.fixedHeight) return;
+        let size = maxFontSize;
+        textbox.set('fontSize', size);
+        textbox.set('width', textbox.width); // width 재설정으로 리플로우 유도
+        
+        // Fabric Textbox 높이 계산 근사치
+        while (textbox.calcTextHeight() > textbox.fixedHeight && size > minFontSize) {
+            size--;
+            textbox.set('fontSize', size);
+            textbox.set('width', textbox.width);
+        }
+        // UI 슬라이더 동기화
+        syncFontControls(textbox);
+    }
+
+    function syncFontControls(textbox) {
+        let id;
+        if (textbox === layers.text_tl) id = 'text_tl';
+        if (textbox === layers.text_bl) id = 'text_bl';
+        if (textbox === layers.text_tr) id = 'text_tr';
+        if (id) {
+            const val = textbox.fontSize;
+            const slider = document.querySelector(`.font-slider[data-id="${id}"]`);
+            const num = document.querySelector(`.num-input[data-id="${id}"]`);
+            if (slider) slider.value = val;
+            if (num) num.value = val;
+        }
+    }
+
+    // 폰트 수동 조절 (슬라이더 <-> 숫자 입력 동기화)
+    function setupSyncInput(sliderClass, numClass, callback) {
+        document.querySelectorAll(sliderClass).forEach(slider => {
+            const id = slider.dataset.id;
+            const numInput = document.querySelector(`${numClass}[data-id="${id}"]`);
+            
+            slider.addEventListener('input', () => {
+                numInput.value = slider.value;
+                callback(id, slider.value);
+            });
+            
+            numInput.addEventListener('input', () => {
+                slider.value = numInput.value;
+                callback(id, numInput.value);
+            });
+        });
+    }
+
+    setupSyncInput('.font-slider', '.font-num', (id, val) => {
+        if (layers[id]) {
+            layers[id].set('fontSize', parseInt(val));
+            canvas.requestRenderAll();
         }
     });
 
-    // --- 5. 효과 (로고) ---
+    // 로고 효과 (Stroke 시뮬레이션)
     function updateLogoEffects() {
         if (!layers.img3) return;
         const shadowOn = document.getElementById('logo-shadow-toggle').checked;
@@ -585,68 +608,93 @@
         const borderWidth = parseFloat(document.getElementById('logo-border-width').value);
         const borderColor = document.getElementById('logo-border-color').value;
 
-        // Shadow
-        if (shadowOn) {
+        // Fabric Canvas에서 비정형 이미지 Stroke를 흉내내는 최선책: Shadow를 Glow처럼 사용
+        if (borderOn && borderWidth > 0) {
+            // Blur를 0으로 하면 픽셀 깨짐이 심하므로 약간의 blur를 줌
+            // Offset 0에서 퍼지는 그림자로 외곽선 흉내
+            layers.img3.set('shadow', new fabric.Shadow({
+                color: borderColor,
+                blur: 1, // 완전 0보다는 1이 자연스러움
+                offsetX: 0, offsetY: 0,
+                nonScaling: true // 확대해도 두께 유지
+            }));
+            // Stroke Width 흉내를 위해 padding이나 scale 조정은 복잡하므로 Shadow만 사용
+            // 단, Shadow 하나로는 약하므로 border width에 따라 blur 조정은 한계가 있음.
+            // Canvas 성능상 이 정도가 타협점.
+        } else if (shadowOn) {
             layers.img3.set('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.9)', blur: 5, offsetX: 5, offsetY: 5 }));
         } else {
             layers.img3.set('shadow', null);
         }
-
-        // Stroke (Fabric Image stroke는 사각형 테두리라 비정형 로고에는 적합하지 않음)
-        // 비정형 이미지 외곽선은 Filter로 처리해야 하는데 Fabric 기본 필터에는 외곽선이 없음.
-        // 여기서는 Fabric Image Stroke(사각형) 대신 Shadow를 이용한 Fake Stroke 또는 그냥 Stroke를 적용.
-        // 원본 기능: CSS drop-shadow 4방향. Fabric에서 이를 구현하려면 filter backend를 써야 함.
-        // 간단히 Fabric stroke로 구현 (사각형 박스 쳐짐) 하거나 생략 권장.
-        // 대안: 텍스트처럼 stroke를 줄 수 없으므로, 로고 테두리는 "정형화된 이미지"라고 가정하고 stroke 적용.
-        if (borderOn && borderWidth > 0) {
-            layers.img3.set({
-                stroke: borderColor,
-                strokeWidth: borderWidth
-            });
-            // 로고가 투명 배경 png라면 stroke는 박스로 나옴. 
-            // 캔버스 레벨에서 픽셀 단위 외곽선을 따는 건 성능상 무리.
-            // 대안: 이미지를 복제해서 뒤에 깔고 색상을 채워서 조금 키우는 방식(복잡함).
-            // 여기서는 심플하게 Shadow로 외곽선 느낌 흉내 (Glow)
-             layers.img3.set('shadow', new fabric.Shadow({
-                 color: borderColor, blur: 0, offsetX: borderWidth, offsetY: borderWidth
-             }));
-             // *정확한 CSS drop-shadow 4방향 구현은 Fabric 필터 커스텀이 필요하여 생략하고 단일 그림자로 대체*
-        } else if (!shadowOn) {
-             layers.img3.set('shadow', null);
-        }
-
         canvas.requestRenderAll();
         saveHistory();
     }
-
+    
+    // 로고 UI 이벤트
     document.getElementById('logo-shadow-toggle').addEventListener('change', updateLogoEffects);
-    document.getElementById('logo-border-toggle').addEventListener('change', () => {
-        document.getElementById('logo-border-controls').style.display = document.getElementById('logo-border-toggle').checked ? 'block' : 'none';
+    document.getElementById('logo-border-toggle').addEventListener('change', (e) => {
+        document.getElementById('logo-border-controls').style.display = e.target.checked ? 'block' : 'none';
         updateLogoEffects();
     });
-    document.getElementById('logo-border-width').addEventListener('input', updateLogoEffects);
+    
+    const borderSlider = document.getElementById('logo-border-width');
+    const borderNum = document.getElementById('logo-border-num');
+    borderSlider.addEventListener('input', () => { borderNum.value = borderSlider.value; updateLogoEffects(); });
+    borderNum.addEventListener('input', () => { borderSlider.value = borderNum.value; updateLogoEffects(); });
     document.getElementById('logo-border-color').addEventListener('input', updateLogoEffects);
 
 
-    // --- 6. 저장 (GIF 내보내기 핵심) ---
+    // --- 7. 단축키 및 기타 유틸 ---
+    window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
+    });
+
+    document.getElementById('auto-font-toggle').addEventListener('change', (e) => {
+        document.getElementById('manual-font-controls').style.display = e.target.checked ? 'none' : 'block';
+        if (e.target.checked) {
+            autoResizeFont(layers.text_tl);
+            autoResizeFont(layers.text_bl);
+            autoResizeFont(layers.text_tr);
+            canvas.requestRenderAll();
+        }
+    });
+
+    // 모바일 모드 배율 (원본 로직 복구)
+    document.getElementById('mobile-mode-toggle').addEventListener('change', (e) => {
+        const wrapper = document.getElementById('canvas-wrapper');
+        if (e.target.checked) {
+            document.body.classList.add('mobile-mode');
+            const scale = (window.innerWidth / 1100).toFixed(2); // 원본 공식
+            wrapper.style.transform = `scale(${scale})`;
+            wrapper.style.marginTop = '-250px'; 
+        } else {
+            document.body.classList.remove('mobile-mode');
+            wrapper.style.transform = 'scale(1)';
+            wrapper.style.marginTop = '0';
+        }
+    });
     
-    // gif.js 워커 인라인 Blob 생성 (외부 파일 의존성 제거)
-    const gifWorkerBlob = new Blob([`
-        importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');
-    `], { type: 'application/javascript' });
+    // 업로드 버튼 연결
+    document.getElementById('img-input-1').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img1'));
+    document.getElementById('img-input-2').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img2'));
+    document.getElementById('img-input-3').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img3'));
+
+
+    // --- 8. 저장 및 Undo/Redo (기존 유지) ---
+    const gifWorkerBlob = new Blob([`importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');`], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(gifWorkerBlob);
 
     document.getElementById('save-btn').addEventListener('click', async () => {
         canvas.discardActiveObject();
+        setFocusMode(null); // 저장 전 투명도 원복
         canvas.requestRenderAll();
-
+        
         const loading = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
         loading.style.display = 'flex';
 
         if (activeGifs.length === 0) {
-            // 정적 이미지 저장
-            loadingText.innerText = "이미지 생성 중...";
             setTimeout(() => {
                 const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 });
                 const link = document.createElement('a');
@@ -658,140 +706,92 @@
             return;
         }
 
-        // GIF 저장
-        loadingText.innerText = "GIF 프레임 렌더링 중...";
-        
-        // 1. 가장 긴 GIF 찾기
+        loadingText.innerText = "GIF 프레임 추출 중...";
         let maxFrames = 0;
         let mainGif = activeGifs[0];
         activeGifs.forEach(g => {
-            if (g.superGif.get_length() > maxFrames) {
-                maxFrames = g.superGif.get_length();
-                mainGif = g;
-            }
+            if (g.superGif.get_length() > maxFrames) { maxFrames = g.superGif.get_length(); mainGif = g; }
         });
 
-        const gif = new GIF({
-            workers: 4,
-            quality: 10,
-            width: 1024,
-            height: 765,
-            workerScript: workerUrl
-        });
-
-        // 2. 프레임 순회 및 캡처
-        // Fabric 캔버스 상태를 변경하며 캡처
+        const gif = new GIF({ workers: 4, quality: 10, width: 1024, height: 765, workerScript: workerUrl });
         const totalDuration = mainGif.superGif.get_length();
-        
-        // 애니메이션 잠시 중지
         activeGifs.forEach(g => g.superGif.pause());
 
         for (let i = 0; i < totalDuration; i++) {
             loadingText.innerText = `GIF 생성 중 (${i + 1}/${totalDuration})`;
-            
-            // 각 GIF를 i번째 프레임으로 이동
             activeGifs.forEach(g => {
                 const len = g.superGif.get_length();
-                g.superGif.move_to(i % len); // 길이가 다르면 반복
+                g.superGif.move_to(i % len);
                 g.fabricObj.dirty = true;
             });
-            
-            // Fabric 렌더링 (동기)
             canvas.renderAll();
-            
-            // 프레임 추가
-            // delay는 원본 GIF의 delay를 가져오거나 기본값 사용
-            // libgif는 get_frame_delay를 제공하지 않을 수 있으니 평균 100ms(10fps) 가정
-            // 정확히 하려면 superGif 내부 접근 필요. 여기선 100ms 고정.
             gif.addFrame(canvas.getElement(), {delay: 100, copy: true});
-            
-            // UI 블로킹 방지
             await new Promise(r => setTimeout(r, 0));
         }
-
-        loadingText.innerText = "인코딩 중... 잠시만 기다려주세요.";
         
+        loadingText.innerText = "인코딩 중...";
         gif.on('finished', function(blob) {
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = '텐카_움짤.gif';
             link.click();
-            
-            // 복구
             activeGifs.forEach(g => g.superGif.play());
             loading.style.display = 'none';
         });
-
         gif.render();
     });
 
-
-    // --- 7. 실행 취소/다시 실행 (History) ---
-    // Fabric state serialization 이용
+    // History System
     let stateHistory = [];
-    let historyMods = 0;
+    let historyStep = -1;
     let isHistoryLocked = false;
 
     function saveHistory() {
         if (isHistoryLocked) return;
-        // GIF 객체 등은 JSON 변환 시 소실될 수 있으므로 주의 필요.
-        // 단순 좌표/텍스트 복구용으로만 사용하고, 이미지 소스는 유지한다고 가정.
-        // 전체 직렬화는 성능 이슈 및 GIF 재생 끊김 유발.
-        // 여기서는 "텍스트 내용"과 "객체 트랜스폼(위치/크기)"만 저장하는 경량화 방식 권장.
+        // 성능을 위해 필수 속성만 저장 (GIF 내용은 저장 불가, 위치/텍스트만)
+        const json = JSON.stringify(canvas.toJSON(['id', 'fixedHeight', 'selectable', 'evented']));
         
-        const json = JSON.stringify(canvas.toJSON(['id', 'fixedHeight']));
+        // 새로운 동작 시 redo 스택 날림
+        if (historyStep < stateHistory.length - 1) {
+            stateHistory = stateHistory.slice(0, historyStep + 1);
+        }
         stateHistory.push(json);
-        if(stateHistory.length > 20) stateHistory.shift();
-        historyMods = 0;
+        historyStep++;
+        if(stateHistory.length > 30) { stateHistory.shift(); historyStep--; }
     }
 
     function undo() {
-        if (stateHistory.length < 2) return;
-        isHistoryLocked = true;
-        stateHistory.pop(); // 현재 상태 제거
-        const prevState = stateHistory[stateHistory.length - 1];
-        loadState(prevState);
-        isHistoryLocked = false;
+        if (historyStep > 0) {
+            historyStep--;
+            loadState(stateHistory[historyStep]);
+        }
     }
 
     function redo() {
-        // Redo 구현을 위해서는 별도 스택 필요하나, 요청 단순화를 위해 Undo만 구현
-        // 또는 undo 시 pointer만 이동.
-        alert('현재 되돌리기(Undo)만 지원합니다.');
+        if (historyStep < stateHistory.length - 1) {
+            historyStep++;
+            loadState(stateHistory[historyStep]);
+        }
     }
 
     function loadState(json) {
+        isHistoryLocked = true;
         canvas.loadFromJSON(json, () => {
-            // 로드 후 객체 참조 재연결 (layers 객체 업데이트)
-            canvas.getObjects().forEach(obj => {
-                // 레이어 식별 로직 필요 (여기선 생략, 단순 전체 로드)
-                // GIF가 포함된 경우 새로 로드되면 애니메이션이 멈춤.
-                // GIF 지원 에디터에서 Undo 구현은 매우 복잡하므로 
-                // 텍스트/위치 변경만 롤백하는 것이 안전함.
+            // 객체 참조 재연결
+            const objs = canvas.getObjects();
+            objs.forEach(obj => {
                 if(obj instanceof fabric.Textbox) {
-                     // 텍스트 이벤트 재연결
-                     obj.on('changed', () => autoResizeFont(obj));
+                    obj.on('changed', () => { autoResizeFont(obj); saveHistory(); });
+                    // 레이어 변수 재매핑
+                    // 텍스트 내용으로 구분하거나 순서로 구분
                 }
+                // GIF 객체는 JSON 로드 시 정적 이미지가 됨 (Fabric 한계)
+                // 완벽한 Undo/Redo를 위해선 GIF 원본을 별도 관리해야 하지만, 복잡도상 위치 복구에 집중
             });
             reorderLayers();
-            canvas.renderAll();
+            isHistoryLocked = false;
         });
     }
-    
-    // 초기 상태 저장
-    setTimeout(saveHistory, 1000);
-
-    // 폰트 수동 조절 이벤트
-    document.querySelectorAll('.font-slider').forEach(slider => {
-        slider.addEventListener('input', (e) => {
-            const id = e.target.dataset.id;
-            const val = parseInt(e.target.value);
-            if (layers[id]) {
-                layers[id].set('fontSize', val);
-                canvas.requestRenderAll();
-            }
-        });
-    });
 
     // 폰트 파일 업로드
     document.getElementById('font-input').addEventListener('change', function(e) {
@@ -816,6 +816,9 @@
         const term = document.getElementById('sgdb-input').value.trim();
         if (term) window.open(`https://www.steamgriddb.com/search/grids?term=${encodeURIComponent(term)}`, '_blank');
     });
+    
+    // 초기 상태 저장
+    setTimeout(saveHistory, 1000);
 
 </script>
 </body>
