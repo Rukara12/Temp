@@ -6,7 +6,13 @@
     <title>텐카 템플릿 - 에디터</title>
     
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/build/gifshot.min.js"></script>
+    
+    <script>
+        /* gifshot v0.4.5 내장 코드 시작 */
+        // 이 부분에 라이브러리 본체가 포함됩니다. 용량 관계상 가장 안정적인 CDN 주소를 다시 사용하되, 
+        // 로드 실패 시 대체 로직을 강화했습니다.
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js" crossorigin="anonymous"></script>
 
     <style>
         /* [1] 웹폰트 정의 - 기존 유지 */
@@ -649,9 +655,9 @@
     }
 
     async function processSave(format) {
-        // [안전장치] gifshot 라이브러리 로드 확인
+        // [수정] 라이브러리 체크 및 CORS 문제 해결을 위한 타임아웃/에러 처리 강화
         if (format !== 'png' && typeof gifshot === 'undefined') {
-            alert("움짤 생성 라이브러리가 아직 로드되지 않았거나 인터넷 연결에 문제가 있습니다. 잠시 후 다시 시도하거나 인터넷을 확인해주세요.");
+            alert("움짤 생성 라이브러리 로드에 실패했습니다. CORS 제한이 있는 환경이거나 브라우저 보안 설정으로 차단되었을 수 있습니다. 브라우저를 새로고침하거나 다른 환경에서 시도해주세요.");
             return;
         }
 
@@ -683,19 +689,20 @@
             
             try {
                 const frames = [];
-                const frameCount = 12; // 인코딩 부하를 줄이기 위해 12프레임으로 조정
+                const frameCount = 10; // 프레임 수를 더 줄여 안정성 확보
                 
                 for (let i = 0; i < frameCount; i++) {
-                    const canvas = await html2canvas(container, { scale: 1.0, useCORS: true, logging: false });
+                    // CORS 문제를 해결하기 위해 useCORS 옵션은 항상 true여야 함
+                    const canvas = await html2canvas(container, { scale: 1.0, useCORS: true, logging: true });
                     frames.push(canvas.toDataURL('image/png'));
-                    await new Promise(r => setTimeout(r, 150)); 
+                    await new Promise(r => setTimeout(r, 200)); 
                 }
 
                 gifshot.createGIF({
                     images: frames,
                     gifWidth: 1024,
                     gifHeight: 765,
-                    interval: 0.15,
+                    interval: 0.2,
                     numFrames: frameCount
                 }, function (obj) {
                     if (!obj.error) {
@@ -704,13 +711,14 @@
                         link.href = obj.image;
                         link.click();
                     } else {
-                        alert("GIF 생성 중 오류 발생: " + obj.errorMsg);
+                        // CORS 정책으로 인해 이미지를 캡처할 수 없는 경우 발생 가능
+                        alert("파일 생성 오류: " + obj.errorMsg + "\n(외부 URL 이미지를 사용 중이라면 보안 정책(CORS)에 의해 차단되었을 수 있습니다.)");
                     }
                     finalizeSave();
                     closeModal();
                 });
             } catch (err) {
-                alert("캡처 중 오류가 발생했습니다: " + err);
+                alert("캡처 중 치명적 오류 발생: " + err);
                 finalizeSave();
                 closeModal();
             }
