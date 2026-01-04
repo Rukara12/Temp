@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터 (진행도 표시 지원)</title>
+    <title>텐카 템플릿 - 에디터 (수정판)</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -143,10 +143,10 @@
         .slider-item input[type="range"] { width: 100px; }
         .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; text-align: center; }
 
-        /* 로딩 오버레이 및 진행률 바 */
+        /* 로딩 오버레이 */
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); color: white; z-index: 9999;
+            background: rgba(0,0,0,0.7); color: white; z-index: 9999;
             display: none; justify-content: center; align-items: center; flex-direction: column;
         }
         .spinner {
@@ -154,16 +154,6 @@
             width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* [지시사항] 진행률 바 스타일 추가 */
-        #progress-container {
-            width: 250px; height: 10px; background: #444; border-radius: 5px;
-            margin-top: 15px; overflow: hidden; display: none;
-        }
-        #progress-bar {
-            width: 0%; height: 100%; background: #28a745;
-            transition: width 0.1s linear;
-        }
     </style>
 </head>
 <body>
@@ -171,9 +161,6 @@
 <div id="loading-overlay">
     <div class="spinner"></div>
     <div id="loading-text">처리 중입니다...</div>
-    <div id="progress-container">
-        <div id="progress-bar"></div>
-    </div>
 </div>
 
 <aside class="sidebar">
@@ -275,13 +262,6 @@
     <div class="control-section">
         <div class="section-title">💾 저장 설정 및 최적화</div>
         <div class="slider-item">
-            저장 포맷: 
-            <select id="save-format-input" class="num-input" style="width: 80px;">
-                <option value="gif">GIF</option>
-                <option value="webp" selected>WebP</option>
-            </select>
-        </div>
-        <div class="slider-item">
             재생 배속: 
             <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1" style="width: 60px;">
         </div>
@@ -304,9 +284,10 @@
             </select>
         </div>
         <div class="slider-item">
-            품질(1-20): 
+            GIF 품질(1-20): 
             <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20" style="width: 60px;">
         </div>
+        <div class="hint">배속을 높이면 움직임이 빨라집니다.</div>
     </div>
 
     <div style="margin-top: auto;">
@@ -315,14 +296,13 @@
             <button class="history-btn" onclick="undo()">되돌리기 (Ctrl+Z)</button>
             <button class="history-btn" onclick="redo()">다시하기 (Ctrl+Y)</button>
         </div>
-        <button class="save-btn" id="save-btn">최종 결과물 저장 (WebP/GIF/PNG)</button>
+        <button class="save-btn" id="save-btn">최종 결과물 저장 (GIF/PNG)</button>
     </div>
 </aside>
 
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
-<script src="https://unpkg.com/webp-writer@0.1.5/webp-writer.min.js"></script>
 
 <script>
     const canvas = new fabric.Canvas('c', {
@@ -707,29 +687,20 @@
 
         const resScale = parseFloat(document.getElementById('res-scale-input').value);
         const gifQuality = parseInt(document.getElementById('gif-quality-input').value);
-        const saveFormat = document.getElementById('save-format-input').value;
 
         const wrapper = document.getElementById('canvas-wrapper');
         const originalTransform = wrapper.style.transform;
         const originalMargin = wrapper.style.marginTop;
         wrapper.style.transform = 'none'; wrapper.style.marginTop = '0';
-        
         const loading = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress-bar');
-        
         loading.style.display = 'flex';
-        progressContainer.style.display = 'block';
-        progressBar.style.width = '0%';
 
         if (activeGifs.length === 0) {
             setTimeout(() => {
-                const mimeType = saveFormat === 'webp' ? 'image/webp' : 'image/png';
-                const ext = saveFormat === 'webp' ? 'webp' : 'png';
-                const dataURL = canvas.toDataURL({ format: ext, multiplier: 2 * resScale, quality: 0.9 });
+                const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 * resScale });
                 const link = document.createElement('a');
-                link.download = `텐카_결과물_${dateStr}.${ext}`;
+                link.download = `텐카_결과물_${dateStr}.png`;
                 link.href = dataURL; link.click();
                 wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
                 loading.style.display = 'none';
@@ -737,11 +708,12 @@
             return;
         }
 
+        // [배속 지시사항] 배속 및 FPS 설정 읽기
         let speedMult = parseFloat(document.getElementById('gif-speed-input').value) || 1.0;
         let userFps = parseFloat(document.getElementById('gif-fps-input').value);
         let userFrameDelay = parseInt(document.getElementById('gif-delay-input').value);
 
-        loadingText.innerText = "프레임 분석 중...";
+        loadingText.innerText = "프레임 추출 중...";
         let mainGif = activeGifs[0];
         let calculatedMaxFrames = 0;
         let originalDelay = 100;
@@ -756,77 +728,54 @@
             if(frames && frames.length > 0 && frames[0].delay) originalDelay = frames[0].delay * 10;
         } catch(e) {}
 
+        // 지연 시간 결정 (배속 적용)
         let finalDelay = originalDelay / speedMult;
-        if (userFps > 0) finalDelay = 1000 / userFps;
-        else if (userFrameDelay > 0) finalDelay = userFrameDelay;
+        if (userFps > 0) {
+            finalDelay = 1000 / userFps;
+        } else if (userFrameDelay > 0) {
+            finalDelay = userFrameDelay;
+        }
 
+        // 전체 재생 시간(ms)은 배속에 의해 줄어듦
         const totalDuration = (calculatedMaxFrames * originalDelay) / speedMult;
+        // 최종 캡처 프레임 수는 (줄어든 전체 시간 / 선택된 지연 시간)
         const maxFrames = Math.max(1, Math.round(totalDuration / finalDelay));
 
-        let gifEncoder = null;
-        let webpWriter = null;
-
-        if (saveFormat === 'webp') {
-            // [지시사항] WebPWriter 생성 시 가로/세로 인자 추가 (오류 수정)
-            webpWriter = new WebPWriter({
-                quality: Math.min(1.0, (21 - gifQuality) / 20),
-                width: 1024 * resScale,
-                height: 765 * resScale
-            });
-        } else {
-            gifEncoder = new GIF({ 
-                workers: 4, quality: gifQuality, 
-                width: 1024 * resScale, height: 765 * resScale, 
-                workerScript: workerUrl 
-            });
-        }
-        
+        const gif = new GIF({ 
+            workers: 4, 
+            quality: gifQuality, 
+            width: 1024 * resScale, 
+            height: 765 * resScale, 
+            workerScript: workerUrl 
+        });
         activeGifs.forEach(g => g.superGif.pause());
 
         for (let i = 0; i < maxFrames; i++) {
-            const currentProgress = Math.round(((i + 1) / maxFrames) * 100);
             loadingText.innerText = `프레임 캡처 (${i + 1}/${maxFrames})`;
-            progressBar.style.width = currentProgress + '%';
-
             activeGifs.forEach(g => {
                 const len = g.superGif.get_length();
+                // 배속이 적용된 타겟 프레임 계산
                 const progress = i / maxFrames;
                 const targetFrame = Math.floor(progress * len);
                 g.superGif.move_to(targetFrame % len);
                 g.fabricObj.dirty = true;
             });
             const frameCanvas = canvas.toCanvasElement(resScale);
-            
-            if (saveFormat === 'webp') {
-                webpWriter.addFrame(frameCanvas, finalDelay);
-            } else {
-                gifEncoder.addFrame(frameCanvas, { delay: finalDelay, copy: true });
-            }
-            await new Promise(r => setTimeout(r, 10)); // 렌더링 갱신 시간 확보
+            gif.addFrame(frameCanvas, { delay: finalDelay, copy: true });
+            await new Promise(r => setTimeout(r, 0));
         }
         
         wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
-        loadingText.innerText = "인코딩 중 (잠시만 기다려주세요)...";
-
-        if (saveFormat === 'webp') {
-            const blob = await webpWriter.complete();
+        loadingText.innerText = "인코딩 중...";
+        gif.on('finished', function(blob) {
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `텐카_움짤_${dateStr}.webp`;
+            link.download = `텐카_움짤_${dateStr}.gif`;
             link.click();
             activeGifs.forEach(g => g.superGif.play());
             loading.style.display = 'none';
-        } else {
-            gifEncoder.on('finished', function(blob) {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `텐카_움짤_${dateStr}.gif`;
-                link.click();
-                activeGifs.forEach(g => g.superGif.play());
-                loading.style.display = 'none';
-            });
-            gifEncoder.render();
-        }
+        });
+        gif.render();
     });
 
     document.getElementById('mobile-mode-toggle').addEventListener('change', (e) => {
