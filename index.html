@@ -3,11 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터</title>
-    
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/build/gifshot.min.js" crossorigin="anonymous"></script>
-
+    <title>텐카 템플릿 - 에디터 (GIF 지원)</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -93,7 +89,7 @@
             font-weight: bold;
             margin-bottom: 12px;
             color: #495057;
-            display: center;
+            display: flex;
             align-items: center;
         }
 
@@ -127,6 +123,7 @@
         }
         button:hover { opacity: 0.8; }
         .save-btn { background: #28a745; color: white; border: none; font-size: 16px; padding: 15px; margin-top: 10px; }
+        .gif-btn { background: #ff6b6b; color: white; border: none; font-size: 16px; padding: 15px; margin-top: 5px; }
         .upload-btn { background: #007bff; color: white; border: none; }
         .font-btn { background: #6c757d; color: white; border: none; }
         .history-btn { background: #6c757d; color: white; border: none; font-size: 12px; padding: 8px; flex: 1; }
@@ -162,17 +159,30 @@
         .slider-item input[type="range"] { width: 100px; }
         .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; }
 
-        /* 저장 팝업 스타일 */
-        #save-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;
+        /* GIF 진행바 스타일 */
+        #progress-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 400px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            z-index: 1000;
+            display: none;
+            text-align: center;
         }
-        .modal-content {
-            background: white; padding: 30px; border-radius: 12px; text-align: center;
-            max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        #progress-bar {
+            width: 0%;
+            height: 10px;
+            background: #28a745;
+            margin-top: 10px;
+            border-radius: 5px;
+            transition: width 0.2s;
         }
-        .modal-btn-group { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
-        .modal-btn { border: none; color: white; padding: 12px; border-radius: 6px; font-size: 15px; cursor: pointer; }
 
         @media screen and (max-width: 1400px) {
             body:not(.mobile-mode) #meme-container { transform: scale(0.8); }
@@ -269,31 +279,23 @@
             <button class="history-btn" onclick="undo()">되돌리기</button>
             <button class="history-btn" onclick="redo()">다시하기</button>
         </div>
-        <button class="save-btn" id="save-btn">최종 결과물 저장</button>
+        <button class="save-btn" id="save-btn">이미지(PNG) 저장</button>
+        <button class="gif-btn" id="gif-btn">GIF(움짤) 저장</button>
         <div class="hint" style="text-align: center;">텍스트는 클릭하여 직접 수정 가능</div>
     </div>
 </aside>
 
-<div id="save-modal">
-    <div class="modal-content">
-        <h3 style="margin-top: 0;">저장 형식 선택</h3>
-        <p style="font-size: 14px; color: #666;">움직이는 이미지가 감지되었습니다.<br>어떤 형식으로 저장할까요?</p>
-        <div class="modal-btn-group">
-            <button class="modal-btn" style="background: #28a745;" onclick="processSave('png')">정지 이미지 (PNG)</button>
-            <button class="modal-btn" style="background: #007bff;" onclick="processSave('gif')">움직이는 이미지 (GIF)</button>
-            <button class="modal-btn" style="background: #17a2b8;" onclick="processSave('webp')">움직이는 이미지 (WebP 호환)</button>
-            <button class="modal-btn" style="background: #6c757d;" onclick="closeModal()">취소</button>
-        </div>
-        <div id="save-progress" style="display:none; margin-top:15px; font-size:13px; color:#007bff; font-weight:bold;">
-            프레임 캡처 및 인코딩 중... 잠시만 기다려주세요.
-        </div>
-    </div>
+<div id="progress-container">
+    <div id="progress-text">GIF 생성 중... (0%)</div>
+    <div id="progress-bar"></div>
 </div>
+
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.browser.js"></script>
 
 <script>
     const maxFontSize = 42;
     const minFontSize = 12;
-    let hasDynamicImage = false;
 
     function adjustFontSize(el) {
         if (!document.getElementById('auto-font-toggle').checked) return;
@@ -307,13 +309,6 @@
 
     let history = [];
     let historyIndex = -1;
-
-    const states = {
-        none: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('meme-container') },
-        1: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-1') },
-        2: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-2') },
-        3: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-3') }
-    };
 
     function saveState() {
         const snapshot = {
@@ -334,8 +329,13 @@
         if (history.length > 30) { history.shift(); historyIndex--; }
     }
 
-    function undo() { if (historyIndex > 0) applyState(JSON.parse(history[--historyIndex])); }
-    function redo() { if (historyIndex < history.length - 1) applyState(JSON.parse(history[++historyIndex])); }
+    function undo() {
+        if (historyIndex > 0) applyState(JSON.parse(history[--historyIndex]));
+    }
+
+    function redo() {
+        if (historyIndex < history.length - 1) applyState(JSON.parse(history[++historyIndex]));
+    }
 
     function applyState(data) {
         data.layers.forEach(l => {
@@ -348,12 +348,6 @@
             const el = document.getElementById(b.id);
             el.innerHTML = b.html; el.style.fontSize = b.fontSize;
         });
-    }
-
-    function updateTransform(id) {
-        const s = states[id];
-        if (!s || !s.el) return;
-        s.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.scale}) rotate(${s.rotate}deg) scaleX(${s.flip})`;
     }
 
     window.addEventListener('keydown', (e) => {
@@ -436,6 +430,7 @@
                         adjustFontSize(bubble);
                     });
                     saveState();
+                    alert('새로운 폰트가 적용되었습니다.');
                 } catch (err) { alert('폰트 로드 실패'); }
             };
             reader.readAsArrayBuffer(file);
@@ -480,6 +475,13 @@
         else alert('검색어를 입력해주세요.');
     });
 
+    const states = {
+        none: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('meme-container') },
+        1: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-1') },
+        2: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-2') },
+        3: { x: 0, y: 0, scale: 1.0, rotate: 0, flip: 1, el: document.getElementById('img-3') }
+    };
+
     function resetLayer() {
         const id = getTargetId();
         states[id].x = 0; states[id].y = 0; states[id].scale = 1.0; states[id].rotate = 0; states[id].flip = 1;
@@ -521,11 +523,16 @@
 
     document.querySelectorAll('input[name="target"]').forEach(radio => radio.addEventListener('change', updateVisibility));
 
+    function updateTransform(id) {
+        const s = states[id];
+        if (!s || !s.el) return;
+        s.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.scale}) rotate(${s.rotate}deg) scaleX(${s.flip})`;
+    }
+
     function setupUpload(id) {
         document.getElementById(`img-input-${id}`).addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                if (file.type === 'image/gif' || file.type === 'image/webp') hasDynamicImage = true;
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     states[id].el.src = ev.target.result;
@@ -592,7 +599,10 @@
             updateTransform(id); if (e.cancelable) e.preventDefault();
         } else if (e.touches.length === 2) {
             const currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-            if (!initialDist || initialDist === 0) { initialDist = currentDist; startScale = states[id].scale; }
+            if (!initialDist || initialDist === 0) {
+                initialDist = currentDist;
+                startScale = states[id].scale;
+            }
             if (initialDist > 0) {
                 const zoomFactor = currentDist / initialDist;
                 states[id].scale = Math.max(0.05, Math.min(10, startScale * zoomFactor));
@@ -613,21 +623,17 @@
         updateTransform(id); triggerHistorySave();
     }, { passive: false });
 
+    // PNG 저장 로직
     document.getElementById('save-btn').addEventListener('click', function() {
-        if (hasDynamicImage) document.getElementById('save-modal').style.display = 'flex';
-        else processSave('png');
+        saveImage('png');
     });
 
-    function closeModal() {
-        document.getElementById('save-modal').style.display = 'none';
-        document.getElementById('save-progress').style.display = 'none';
-    }
+    // GIF 저장 로직
+    document.getElementById('gif-btn').addEventListener('click', function() {
+        saveImage('gif');
+    });
 
-    async function processSave(format) {
-        if (format !== 'png' && (typeof gifshot === 'undefined' || !gifshot.createGIF)) {
-            alert("움짤 생성 라이브러리가 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
-            return;
-        }
+    async function saveImage(format) {
         const bg = document.getElementById('background-layer');
         const layers = [1, 2, 3].map(i => document.getElementById(`layer-photo-${i}`));
         const bubbles = document.querySelectorAll('.bubble');
@@ -636,44 +642,67 @@
         const prevX = states.none.x;
         const prevY = states.none.y;
 
-        if(isMobile) { states.none.scale = 1.0; states.none.x = 0; states.none.y = 0; updateTransform('none'); }
+        // 캡처를 위한 셋업
+        if(isMobile) {
+            states.none.scale = 1.0; states.none.x = 0; states.none.y = 0;
+            updateTransform('none');
+        }
         bg.style.opacity = '1'; layers.forEach(l => l.style.opacity = '1'); bubbles.forEach(b => b.style.opacity = '1');
 
         if (format === 'png') {
             html2canvas(container, { scale: 2, useCORS: true, logging: false, backgroundColor: null }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = '텐카_결과물.png'; 
-                link.href = canvas.toDataURL('image/png'); 
-                link.click();
-                finalizeSave();
+                link.download = '텐카_결과물.png'; link.href = canvas.toDataURL('image/png'); link.click();
+                restoreAfterSave();
             });
-        } else {
-            const progress = document.getElementById('save-progress');
-            progress.style.display = 'block';
-            try {
-                const frames = [];
-                const frameCount = 12;
-                for (let i = 0; i < frameCount; i++) {
-                    const canvas = await html2canvas(container, { scale: 1.0, useCORS: true, logging: false });
-                    frames.push(canvas.toDataURL('image/png'));
-                    await new Promise(r => setTimeout(r, 150)); 
-                }
-                gifshot.createGIF({
-                    images: frames, gifWidth: 1024, gifHeight: 765, interval: 0.15, numFrames: frameCount
-                }, function (obj) {
-                    if (!obj.error) {
-                        const link = document.createElement('a');
-                        link.download = `텐카_결과물.${format}`;
-                        link.href = obj.image;
-                        link.click();
-                    } else alert("생성 오류: " + obj.errorMsg);
-                    finalizeSave(); closeModal();
-                });
-            } catch (err) { alert("캡처 오류: " + err); finalizeSave(); closeModal(); }
+        } else if (format === 'gif') {
+            const progressContainer = document.getElementById('progress-container');
+            const progressText = document.getElementById('progress-text');
+            const progressBar = document.getElementById('progress-bar');
+            
+            progressContainer.style.display = 'block';
+            
+            // GIF 설정
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: 1024,
+                height: 765,
+                workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+            });
+
+            const frameCount = 15; // 3초 동안 0.2초 간격으로 15프레임 캡처
+            for (let i = 0; i < frameCount; i++) {
+                progressText.innerText = `움짤 기록 중... (${Math.round((i / frameCount) * 50)}%)`;
+                progressBar.style.width = (i / frameCount) * 50 + '%';
+                
+                const canvas = await html2canvas(container, { scale: 1, useCORS: true, logging: false });
+                gif.addFrame(canvas, { delay: 200 }); // 프레임당 0.2초
+            }
+
+            gif.on('progress', function(p) {
+                progressText.innerText = `GIF 인코딩 중... (${Math.round(50 + p * 50)}%)`;
+                progressBar.style.width = (50 + p * 50) + '%';
+            });
+
+            gif.on('finished', function(blob) {
+                const link = document.createElement('a');
+                link.download = '텐카_결과물.gif';
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                
+                progressContainer.style.display = 'none';
+                restoreAfterSave();
+            });
+
+            gif.render();
         }
 
-        function finalizeSave() {
-            if(isMobile) { states.none.scale = prevScale; states.none.x = prevX; states.none.y = prevY; updateTransform('none'); }
+        function restoreAfterSave() {
+            if(isMobile) {
+                states.none.scale = prevScale; states.none.x = prevX; states.none.y = prevY;
+                updateTransform('none');
+            }
             updateVisibility();
         }
     }
