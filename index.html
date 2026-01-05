@@ -21,7 +21,8 @@
 
         /* [2] 레이아웃 스타일 */
         body { 
-            margin: 0; padding: 0; 
+            margin: 0;
+            padding: 0; 
             font-family: 'PyeongtaekSunset', sans-serif; 
             background-color: #e9ecef;
             display: flex;
@@ -158,12 +159,18 @@
             margin-bottom: 8px;
             transition: all 0.2s;
         }
-        button:hover { opacity: 0.8; }
-        .save-btn { background: #28a745; color: white; border: none; font-size: 16px; padding: 15px; margin-top: 10px; }
-        .upload-btn { background: #007bff; color: white; border: none; }
-        .font-btn { background: #6c757d; color: white; border: none; }
-        .history-btn { background: #6c757d; color: white; border: none; font-size: 12px; padding: 8px; flex: 1; }
-        .issue-btn { background: #ffc107; color: #212529; border: none; margin-bottom: 5px; }
+        button:hover { opacity: 0.8;
+        }
+        .save-btn { background: #28a745; color: white; border: none; font-size: 16px; padding: 15px;
+        margin-top: 10px; }
+        .upload-btn { background: #007bff; color: white; border: none;
+        }
+        .font-btn { background: #6c757d; color: white; border: none;
+        }
+        .history-btn { background: #6c757d; color: white; border: none; font-size: 12px; padding: 8px;
+        flex: 1; }
+        .issue-btn { background: #ffc107; color: #212529; border: none; margin-bottom: 5px;
+        }
 
         .selector-box {
             background: #f8f9fa;
@@ -178,24 +185,32 @@
             font-size: 14px;
         }
 
-        .hint { color: #868e96; font-size: 12px; margin-top: 5px; line-height: 1.4; }
+        .hint { color: #868e96;
+        font-size: 12px; margin-top: 5px; line-height: 1.4; }
         
         /* 폰트 컨트롤 */
-        .slider-item { margin: 8px 0; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
-        .slider-item input[type="range"] { width: 90px; }
-        .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; text-align: center; }
+        .slider-item { margin: 8px 0;
+        display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+        .slider-item input[type="range"] { width: 90px;
+        }
+        .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px;
+        font-size: 12px; text-align: center; }
 
         /* 로딩 오버레이 */
         #loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); color: white; z-index: 9999;
-            display: none; justify-content: center; align-items: center; flex-direction: column;
+            display: none; justify-content: center; align-items: center;
+            flex-direction: column;
         }
         .spinner {
-            border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db; border-radius: 50%;
             width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg);
+        } }
     </style>
 </head>
 <body>
@@ -400,7 +415,6 @@
 
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js"></script>
-<!-- [변경] FFmpeg v0.12 (단일 스레드 호환 버전) -->
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js"></script>
 <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
@@ -417,18 +431,15 @@
         img1: null, img2: null, img3: null, overlay: null,
         text_tl: null, text_bl: null, text_tr: null, placeholders: []
     };
-
     const clipRects = {
         img1: { left: 200, top: 0, width: 700, height: 440 },
         img2: { left: 531, top: 470, width: 90, height: 150 },
         img3: { left: 635, top: 415, width: 380, height: 340 }
     };
-
     let activeGifs = [];
 
-    // [변경] FFmpeg v0.12 초기화 (SharedArrayBuffer 불필요)
     const { FFmpeg } = window.FFmpegWASM;
-    const { fetchFile } = window.FFmpegUtil;
+    const { fetchFile, toBlobURL } = window.FFmpegUtil; // toBlobURL 추가
     let ffmpeg = null;
 
     async function initFFmpeg() {
@@ -437,15 +448,17 @@
         ffmpeg.on('log', ({ message }) => {
             console.log('[FFmpeg]', message);
         });
-        // 단일 스레드 Core 로드 (GitHub Pages 호환)
+
+        // [수정] GitHub Pages 교차 출처 Worker 오류 해결을 위해 toBlobURL 사용
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
         await ffmpeg.load({
-            coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
         });
     }
 
     document.fonts.ready.then(() => { initCanvas(); });
 
-    // UI 제어 함수
     function toggleSection(header) {
         const content = header.nextElementSibling;
         const arrow = header.querySelector('.toggle-arrow');
@@ -530,7 +543,6 @@
             fill: '#000000', lineHeight: 1.2, originX: 'left', originY: 'top',
             editable: true, splitByGrapheme: true, padding: 15
         };
-
         const createText = (text, l, t, w, h, key, defaultSize) => {
             const tBox = new fabric.Textbox(text, {
                 ...commonStyle, left: l, top: t, width: w, height: h, fixedHeight: h, fontSize: defaultSize
@@ -539,14 +551,12 @@
             tBox._originalTop = t;
             layers[key] = tBox;
             canvas.add(tBox);
-            
             tBox.on('scaling', function() {
                 const scaleX = this.scaleX;
                 const newFontSize = this.fontSize * scaleX;
                 this.set({ fontSize: newFontSize, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
                 syncFontControls(this);
             });
-
             tBox.on('changed', () => { alignVerticalCenter(tBox); saveHistory(); });
         };
 
@@ -562,8 +572,10 @@
         const textHeight = textbox.calcTextHeight();
         const boxHeight = textbox.fixedHeight;
         const originalTop = textbox._originalTop || textbox.top;
-        if (textHeight < boxHeight) { textbox.set('top', originalTop + (boxHeight - textHeight) / 2); } 
-        else { textbox.set('top', originalTop); }
+        if (textHeight < boxHeight) { textbox.set('top', originalTop + (boxHeight - textHeight) / 2);
+        } 
+        else { textbox.set('top', originalTop);
+        }
         canvas.requestRenderAll();
     }
 
@@ -618,7 +630,8 @@
         reader.onload = function(e) {
             const result = e.target.result;
             if (file.type === 'image/gif') { loadGif(result, layerKey); } 
-            else { fabric.Image.fromURL(result, function(img) { setupLayerObj(img, layerKey); }); }
+            else { fabric.Image.fromURL(result, function(img) { setupLayerObj(img, layerKey); });
+            }
         };
         reader.readAsDataURL(file);
     }
@@ -634,7 +647,6 @@
         const imgTag = document.createElement('img');
         imgTag.src = dataUrl;
         container.appendChild(imgTag);
-
         const rubbableGif = new SuperGif({ gif: imgTag, auto_play: false });
         rubbableGif.load(function() {
             const gifCanvas = rubbableGif.get_canvas();
@@ -724,7 +736,8 @@
     };
     window.flipActiveObject = () => {
         const obj = canvas.getActiveObject();
-        if(obj) { obj.set('flipX', !obj.flipX); canvas.requestRenderAll(); saveHistory(); }
+        if(obj) { obj.set('flipX', !obj.flipX);
+        canvas.requestRenderAll(); saveHistory(); }
     };
 
     window.deleteActiveObject = () => {
@@ -815,22 +828,23 @@
     let historyStep = -1;
     let isHistoryLocked = false;
     const SAVE_PROPS = ['id', 'fixedHeight', 'selectable', 'evented', '_layerKey', '_originalState', 'padding', '_originalTop', '_gifDataUrl'];
-
     function saveHistory() {
         if (isHistoryLocked) return;
         const json = JSON.stringify(canvas.toJSON(SAVE_PROPS));
         if (historyStep < stateHistory.length - 1) stateHistory = stateHistory.slice(0, historyStep + 1);
         stateHistory.push(json);
         historyStep++;
-        if(stateHistory.length > 20) { stateHistory.shift(); historyStep--; }
+        if(stateHistory.length > 20) { stateHistory.shift(); historyStep--;
+        }
     }
 
-    function undo() { if (historyStep > 0) { historyStep--; loadState(stateHistory[historyStep]); } }
-    function redo() { if (historyStep < stateHistory.length - 1) { historyStep++; loadState(stateHistory[historyStep]); } }
+    function undo() { if (historyStep > 0) { historyStep--; loadState(stateHistory[historyStep]);
+    } }
+    function redo() { if (historyStep < stateHistory.length - 1) { historyStep++; loadState(stateHistory[historyStep]);
+    } }
 
     function loadState(json) {
         isHistoryLocked = true;
-        
         activeGifs.forEach(g => {
             if (g.superGif) g.superGif.pause();
             if (g.container && g.container.parentNode) {
@@ -878,20 +892,17 @@
                     const imgTag = document.createElement('img');
                     imgTag.src = obj._gifDataUrl;
                     container.appendChild(imgTag);
-
                     const rubbableGif = new SuperGif({ gif: imgTag, auto_play: false });
                     rubbableGif.load(function() {
                         const gifCanvas = rubbableGif.get_canvas();
                         obj.setElement(gifCanvas);
                         obj.set({ objectCaching: false, dirty: true });
-                        
                         activeGifs.push({ fabricObj: obj, superGif: rubbableGif, canvasEl: gifCanvas, container: container });
                         rubbableGif.play();
                         updateGifInfo();
                     });
                 }
             });
-
             if (layers.img3) {
                 updateLogoEffects();
             }
@@ -903,7 +914,6 @@
         });
     }
 
-    // [변경] 저장 버튼 클릭 이벤트 (FFmpeg v0.12 적용)
     document.getElementById('save-btn').addEventListener('click', async () => {
         canvas.discardActiveObject();
         resetAllOpacities();
@@ -934,11 +944,9 @@
         }
 
         try {
-            // 1. FFmpeg 로드 (싱글 스레드)
             loadingText.innerText = "FFmpeg 엔진 로딩 중... (최초 1회)";
             await initFFmpeg();
 
-            // 2. 프레임 계산
             let speedMult = parseFloat(document.getElementById('gif-speed-input').value) || 1.0;
             let userFps = parseFloat(document.getElementById('gif-fps-input').value);
             let userFrameDelay = parseInt(document.getElementById('gif-delay-input').value);
@@ -951,25 +959,20 @@
                 if (len > calculatedMaxFrames) { calculatedMaxFrames = len; mainGif = g; }
             });
             try {
-                const frames = mainGif.superGif.get_frames(); 
+                const frames = mainGif.superGif.get_frames();
                 if(frames && frames.length > 0 && frames[0].delay) originalDelay = frames[0].delay * 10;
             } catch(e) {}
             
             let finalDelay = originalDelay / speedMult;
             if (userFps > 0) finalDelay = 1000 / userFps;
             else if (userFrameDelay > 0) finalDelay = userFrameDelay;
-
             const totalDuration = (calculatedMaxFrames * originalDelay) / speedMult;
             const maxFrames = Math.max(1, Math.round(totalDuration / finalDelay));
 
             activeGifs.forEach(g => g.superGif.pause());
-
-            // 3. 프레임별 캡처 및 가상 파일 쓰기
             const frameFileNames = [];
-            
             for (let i = 0; i < maxFrames; i++) {
                 loadingText.innerText = `프레임 캡처 중 (${i + 1}/${maxFrames})`;
-                
                 activeGifs.forEach(g => {
                     const len = g.superGif.get_length();
                     const progress = i / maxFrames;
@@ -977,39 +980,29 @@
                     g.superGif.move_to(targetFrame % len);
                     g.fabricObj.dirty = true;
                 });
-                
                 canvas.renderAll();
                 const dataURL = canvas.toDataURL({ format: 'png', multiplier: resScale });
                 const fileName = `frame${String(i).padStart(3, '0')}.png`;
                 frameFileNames.push(fileName);
-                
-                // v0.12 API: writeFile
                 await ffmpeg.writeFile(fileName, await fetchFile(dataURL));
-                
                 await new Promise(r => setTimeout(r, 0));
             }
 
-            // 4. FFmpeg 인코딩 (v0.12 API: exec)
             loadingText.innerText = "최적화 인코딩 중... (고화질/저용량)";
             const finalFps = (userFps > 0) ? userFps : (1000 / finalDelay);
             const w = 1024 * resScale;
-            
             await ffmpeg.exec([
                 '-framerate', String(finalFps),
                 '-i', 'frame%03d.png',
                 '-vf', `scale=${w}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
                 'output.gif'
             ]);
-
-            // 5. 결과물 읽기 (v0.12 API: readFile)
             const data = await ffmpeg.readFile('output.gif');
             const blob = new Blob([data.buffer], { type: 'image/gif' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `텐카_움짤_${dateStr}.gif`;
             link.click();
-
-            // 6. 정리 (v0.12 API: deleteFile)
             await ffmpeg.deleteFile('output.gif');
             for (const name of frameFileNames) {
                 await ffmpeg.deleteFile(name);
@@ -1045,7 +1038,7 @@
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
         if (e.key === 'Delete') { deleteActiveObject(); }
     });
-    
+
     document.getElementById('font-input').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
