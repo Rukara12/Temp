@@ -93,7 +93,7 @@
             margin-bottom: 12px;
             color: #495057;
             cursor: pointer;
-            list-style: none; /* 화살표 제거 */
+            list-style: none;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -147,12 +147,10 @@
 
         .hint { color: #868e96; font-size: 12px; margin-top: 5px; line-height: 1.4; }
         
-        /* 폰트 컨트롤 */
         .slider-item { margin: 8px 0; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
         .slider-item input[type="range"] { width: 100px; }
         .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; text-align: center; }
 
-        /* 로딩 오버레이 */
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); color: white; z-index: 9999;
@@ -198,7 +196,6 @@
                 <button onclick="deleteActiveObject()" style="font-size: 12px; padding: 5px; background: #dc3545; color: white; border: none;">삭제</button>
             </div>
         </div>
-        <div class="hint">마우스 휠로 확대/축소가 가능합니다.</div>
     </details>
 
     <details open class="control-section">
@@ -206,13 +203,6 @@
         <input type="text" id="sgdb-input" placeholder="게임명 입력" style="width: 100%; padding: 8px; margin-bottom: 5px; box-sizing: border-box;">
         <button class="upload-btn" id="sgdb-search-btn" style="background:#495057">검색하기</button>
         <button class="reset-btn-sm" onclick="document.getElementById('sgdb-input').value=''">검색창 비우기</button>
-    </details>
-
-    <details open class="control-section">
-        <summary class="section-title">📊 움짤 정보</summary>
-        <div id="detected-fps-info" style="font-size: 13px; color: #495057; line-height: 1.6;">
-            측정된 FPS: -
-        </div>
     </details>
 </aside>
 
@@ -223,13 +213,6 @@
 </main>
 
 <aside class="sidebar right">
-    <details open class="control-section">
-        <summary class="section-title">⚙️ 환경 설정</summary>
-        <label style="cursor:pointer; font-size: 14px; font-weight: bold; color: #007bff;">
-            <input type="checkbox" id="mobile-mode-toggle"> 모바일 최적화 UI 모드
-        </label>
-    </details>
-
     <details open class="control-section">
         <summary class="section-title">🔤 폰트 설정</summary>
         <button class="font-btn" onclick="document.getElementById('font-input').click();">폰트 변경</button>
@@ -257,7 +240,6 @@
         <div id="logo-border-controls" style="display: none; margin-top: 10px; font-size: 13px;">
             <div class="slider-item">두께(Glow): <input type="range" id="logo-border-width" min="0" step="0.1" max="20" value="2.5"></div>
             <div class="slider-item">색상: <input type="color" id="logo-border-color" value="#000000"></div>
-            <div class="hint">투명도를 인식하여 테두리가 생성됩니다.</div>
         </div>
         <button class="reset-btn-sm" onclick="resetEffectOptions()">효과 초기화</button>
     </details>
@@ -271,11 +253,6 @@
     </details>
 
     <div style="margin-top: auto;">
-        <button class="issue-btn" onclick="window.open('https://github.com/Rukara12/Tenka-ZZANG-Template/tree/main', '_blank');">이슈 보고</button>
-        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-            <button class="history-btn" onclick="undo()">되돌리기</button>
-            <button class="history-btn" onclick="redo()">다시하기</button>
-        </div>
         <button class="save-btn" id="save-btn">최종 결과물 저장</button>
     </div>
 </aside>
@@ -346,17 +323,6 @@
         canvas.requestRenderAll();
     }
 
-    function updateGifInfo() {
-        let infoStr = "측정된 FPS:<br>";
-        if (activeGifs.length === 0) infoStr = "측정된 FPS: -";
-        else activeGifs.forEach(g => {
-            let d = 100; try { d = g.superGif.get_frames()[0].delay * 10; } catch(e) {}
-            let name = g.fabricObj._layerKey === 'img1' ? '말풍선' : (g.fabricObj._layerKey === 'img2' ? '핸드폰' : '로고');
-            infoStr += `[${name}] ${(1000 / d).toFixed(1)} FPS<br>`;
-        });
-        document.getElementById('detected-fps-info').innerHTML = infoStr;
-    }
-
     function cleanupLayer(layerKey) {
         if (!layers[layerKey]) return;
         canvas.remove(layers[layerKey]);
@@ -367,7 +333,7 @@
             if (gifData.container && gifData.container.parentNode) gifData.container.parentNode.removeChild(gifData.container);
             activeGifs.splice(gifIdx, 1);
         }
-        layers[layerKey] = null; updateGifInfo();
+        layers[layerKey] = null;
     }
 
     function handleImageUpload(file, layerKey) {
@@ -389,7 +355,7 @@
             const fabricImg = new fabric.Image(rubbableGif.get_canvas(), { objectCaching: false });
             setupLayerObj(fabricImg, layerKey);
             activeGifs.push({ fabricObj: fabricImg, superGif: rubbableGif, container: container });
-            rubbableGif.play(); updateGifInfo();
+            rubbableGif.play();
         });
     }
 
@@ -444,39 +410,37 @@
         if (slider) slider.value = val; if (num) num.value = val;
     }
 
-    document.querySelectorAll('.font-slider, .font-num').forEach(el => {
-        el.addEventListener('input', (e) => {
-            const id = e.target.dataset.id; const val = parseInt(e.target.value);
-            if (layers[id]) { layers[id].set('fontSize', val); alignVerticalCenter(layers[id]); canvas.requestRenderAll(); saveHistory(); }
-        });
-    });
-
-    // [지시 1] PNG 투명도 무시 테두리 로직 수정 및 [지시 3] 초기화
+    // [수정] 테두리와 그림자 동시 적용 로직 (객체 shadow + 필터 DropShadow 조합)
     function updateLogoEffects() {
         if (!layers.img3) return;
         const shadowOn = document.getElementById('logo-shadow-toggle').checked;
         const borderOn = document.getElementById('logo-border-toggle').checked;
 
-        // 투명도를 무시하는 테두리는 그림자 객체를 겹쳐서 구현 (Blur 0 방식)
-        let finalShadow = null;
+        // 1. 초기화
+        layers.img3.shadow = null;
+        layers.img3.filters = layers.img3.filters.filter(f => f.type !== 'DropShadow');
 
+        // 2. 그림자 설정 (객체 shadow 속성 사용)
         if (shadowOn) {
-            finalShadow = new fabric.Shadow({
+            layers.img3.set('shadow', new fabric.Shadow({
                 color: document.getElementById('logo-shadow-color').value,
                 blur: parseInt(document.getElementById('logo-shadow-blur').value),
                 offsetX: parseInt(document.getElementById('logo-shadow-offsetx').value),
                 offsetY: parseInt(document.getElementById('logo-shadow-offsety').value)
-            });
-        } else if (borderOn) {
-            // [지시 1] 테두리도 투명 영역을 무시하도록 그림자 효과를 이용해 구현
-            finalShadow = new fabric.Shadow({
-                color: document.getElementById('logo-border-color').value,
-                blur: parseFloat(document.getElementById('logo-border-width').value),
-                offsetX: 0, offsetY: 0
-            });
+            }));
         }
 
-        layers.img3.set('shadow', finalShadow);
+        // 3. 테두리 설정 (필터 DropShadow 사용 - 투명도 무시 및 중첩 가능)
+        if (borderOn) {
+            layers.img3.filters.push(new fabric.Image.filters.DropShadow({
+                color: document.getElementById('logo-border-color').value,
+                blur: parseFloat(document.getElementById('logo-border-width').value),
+                offsetX: 0,
+                offsetY: 0
+            }));
+        }
+
+        layers.img3.applyFilters();
         canvas.requestRenderAll(); saveHistory();
     }
 
@@ -496,8 +460,6 @@
     function resetEffectOptions() {
         document.getElementById('logo-shadow-toggle').checked = false;
         document.getElementById('logo-border-toggle').checked = false;
-        document.getElementById('logo-shadow-blur').value = 10;
-        document.getElementById('logo-border-width').value = 2.5;
         document.getElementById('logo-shadow-controls').style.display = 'none';
         document.getElementById('logo-border-controls').style.display = 'none';
         updateLogoEffects();
@@ -509,7 +471,6 @@
         document.getElementById('res-scale-input').value = 1.0;
     }
 
-    // 이벤트 리스너 리바인딩
     document.getElementById('logo-shadow-toggle').addEventListener('change', (e) => { document.getElementById('logo-shadow-controls').style.display = e.target.checked ? 'block' : 'none'; updateLogoEffects(); });
     document.getElementById('logo-border-toggle').addEventListener('change', (e) => { document.getElementById('logo-border-controls').style.display = e.target.checked ? 'block' : 'none'; updateLogoEffects(); });
     ['logo-shadow-blur', 'logo-shadow-offsetx', 'logo-shadow-offsety', 'logo-shadow-color', 'logo-border-width', 'logo-border-color'].forEach(id => document.getElementById(id).addEventListener('input', updateLogoEffects));
@@ -536,10 +497,6 @@
                     layers[obj._layerKey] = obj;
                     if(clipRects[obj._layerKey]) obj.clipPath = new fabric.Rect({ ...clipRects[obj._layerKey], absolutePositioned: true });
                 }
-                if (obj.type === 'textbox') {
-                    obj.on('changed', () => { alignVerticalCenter(obj); saveHistory(); });
-                    obj.on('scaling', function() { this.set({ fontSize: this.fontSize * this.scaleX, width: this.width * this.scaleX, scaleX: 1, scaleY: 1 }); syncFontControls(this); });
-                }
             });
             reorderLayers(); isHistoryLocked = false; canvas.requestRenderAll();
         });
@@ -548,16 +505,28 @@
     const gifWorkerBlob = new Blob([`importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');`], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(gifWorkerBlob);
 
+    // [수정] 내보내기 시 뷰포트 초기화 로직 추가 (잘림 방지)
     document.getElementById('save-btn').addEventListener('click', async () => {
-        canvas.setZoom(1); canvas.discardActiveObject();
+        const savedZoom = canvas.getZoom();
+        const savedVpt = canvas.viewportTransform.slice();
+        
+        // 내보내기용 좌표 초기화
+        canvas.setZoom(1);
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        canvas.discardActiveObject();
+        
         const resScale = parseFloat(document.getElementById('res-scale-input').value);
-        const loading = document.getElementById('loading-overlay'); loading.style.display = 'flex';
+        const loading = document.getElementById('loading-overlay'); 
+        loading.style.display = 'flex';
 
         if (activeGifs.length === 0) {
             setTimeout(() => {
                 const link = document.createElement('a'); link.download = `텐카_결과물.png`;
-                link.href = canvas.toDataURL({ format: 'png', multiplier: 2 * resScale }); link.click();
+                link.href = canvas.toDataURL({ format: 'png', multiplier: resScale }); link.click();
                 loading.style.display = 'none';
+                // 좌표 복원
+                canvas.setZoom(savedZoom);
+                canvas.setViewportTransform(savedVpt);
             }, 100); return;
         }
 
@@ -577,26 +546,22 @@
         
         gif.on('finished', (blob) => {
             const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `텐카_움짤.gif`; link.click();
-            activeGifs.forEach(g => g.superGif.play()); loading.style.display = 'none';
+            activeGifs.forEach(g => g.superGif.play()); 
+            loading.style.display = 'none';
+            // 좌표 복원
+            canvas.setZoom(savedZoom);
+            canvas.setViewportTransform(savedVpt);
         });
         gif.render();
-    });
-
-    document.getElementById('mobile-mode-toggle').addEventListener('change', (e) => {
-        document.body.classList.toggle('mobile-mode', e.target.checked);
-        const scale = e.target.checked ? Math.min((window.innerWidth - 40) / 1024, 1) : 1;
-        document.getElementById('canvas-wrapper').style.transform = `scale(${scale})`;
-    });
-
-    window.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
-        if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
-        if (e.key === 'Delete') deleteActiveObject();
     });
 
     document.getElementById('img-input-1').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img1'));
     document.getElementById('img-input-2').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img2'));
     document.getElementById('img-input-3').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img3'));
+
+    canvas.on('selection:created', (e) => onSelectionChange(e));
+    canvas.on('selection:updated', (e) => onSelectionChange(e));
+    canvas.on('selection:cleared', () => setFocusMode(null));
 
     function onSelectionChange(e) {
         const obj = e.selected[0]; setFocusMode(obj);
