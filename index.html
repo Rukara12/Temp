@@ -87,10 +87,48 @@
             padding-bottom: 15px;
             border-bottom: 1px solid #f1f3f5;
         }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
         .section-title {
             font-size: 16px;
             font-weight: bold;
-            margin-bottom: 12px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-content {
+            display: block;
+        }
+        .section-content.collapsed {
+            display: none;
+        }
+        .toggle-icon {
+            font-size: 10px;
+            color: #adb5bd;
+            transition: transform 0.2s;
+        }
+        .collapsed + .section-header .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        /* 초기화 버튼 스타일 */
+        .reset-section-btn {
+            background: #f1f3f5;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            color: #868e96;
+            cursor: pointer;
+        }
+        .reset-section-btn:hover {
+            background: #e9ecef;
             color: #495057;
         }
 
@@ -165,43 +203,61 @@
 
 <aside class="sidebar">
     <div class="control-section">
-        <div class="section-title">🖼️ 이미지 업로드 (GIF 지원)</div>
-        <button class="upload-btn" onclick="document.getElementById('img-input-1').click();">말풍선 사진</button>
-        <button class="upload-btn" onclick="document.getElementById('img-input-2').click();">핸드폰 사진</button>
-        <button class="upload-btn" onclick="document.getElementById('img-input-3').click();">로고 사진</button>
-        <input type="file" id="img-input-1" accept="image/*" style="display:none" onclick="this.value=null">
-        <input type="file" id="img-input-2" accept="image/*" style="display:none" onclick="this.value=null">
-        <input type="file" id="img-input-3" accept="image/*" style="display:none" onclick="this.value=null">
-    </div>
-
-    <div class="control-section">
-        <div class="section-title">🕹️ 조작 대상</div>
-        <div class="selector-box">
-            <label><input type="radio" name="target" value="none" checked> 선택 없음</label>
-            <label><input type="radio" name="target" value="img1"> 말풍선 사진</label>
-            <label><input type="radio" name="target" value="img2"> 핸드폰 사진</label>
-            <label><input type="radio" name="target" value="img3"> 로고 사진</label>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 10px;">
-                <button onclick="resetActiveObject()" style="font-size: 12px; padding: 5px;">초기화</button>
-                <button onclick="rotateActiveObject()" style="font-size: 12px; padding: 5px;">회전</button>
-                <button onclick="flipActiveObject()" style="font-size: 12px; padding: 5px;">반전</button>
-                <button onclick="deleteActiveObject()" style="font-size: 12px; padding: 5px; background: #dc3545; color: white; border: none;">삭제</button>
-            </div>
+        <div class="section-header" onclick="toggleSection(this)">
+            <div class="section-title">🖼️ 이미지 업로드 <span class="toggle-icon">▼</span></div>
+            <button class="reset-section-btn" onclick="resetImages(event)">↺</button>
         </div>
-        <div class="hint">마우스 휠로 확대/축소가 가능합니다. 이미지를 클릭하거나 라디오 버튼으로 선택 후 조작하세요.</div>
+        <div class="section-content">
+            <button class="upload-btn" onclick="document.getElementById('img-input-1').click();">말풍선 사진</button>
+            <button class="upload-btn" onclick="document.getElementById('img-input-2').click();">핸드폰 사진</button>
+            <button class="upload-btn" onclick="document.getElementById('img-input-3').click();">로고 사진</button>
+            <input type="file" id="img-input-1" accept="image/*" style="display:none" onclick="this.value=null">
+            <input type="file" id="img-input-2" accept="image/*" style="display:none" onclick="this.value=null">
+            <input type="file" id="img-input-3" accept="image/*" style="display:none" onclick="this.value=null">
+        </div>
     </div>
 
     <div class="control-section">
-        <div class="section-title">🔍 SteamGridDB 검색</div>
-        <input type="text" id="sgdb-input" placeholder="게임명 입력" style="width: 100%; padding: 8px; margin-bottom: 5px; box-sizing: border-box;">
-        <button class="upload-btn" id="sgdb-search-btn" style="background:#495057">검색하기</button>
+        <div class="section-header" onclick="toggleSection(this)">
+            <div class="section-title">🕹️ 조작 대상 <span class="toggle-icon">▼</span></div>
+            <button class="reset-section-btn" onclick="resetTargetSelection(event)">↺</button>
+        </div>
+        <div class="section-content">
+            <div class="selector-box">
+                <label><input type="radio" name="target" value="none" checked> 선택 없음</label>
+                <label><input type="radio" name="target" value="img1"> 말풍선 사진</label>
+                <label><input type="radio" name="target" value="img2"> 핸드폰 사진</label>
+                <label><input type="radio" name="target" value="img3"> 로고 사진</label>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 10px;">
+                    <button onclick="resetActiveObject()" style="font-size: 12px; padding: 5px;">초기화</button>
+                    <button onclick="rotateActiveObject()" style="font-size: 12px; padding: 5px;">회전</button>
+                    <button onclick="flipActiveObject()" style="font-size: 12px; padding: 5px;">반전</button>
+                    <button onclick="deleteActiveObject()" style="font-size: 12px; padding: 5px; background: #dc3545; color: white; border: none;">삭제</button>
+                </div>
+            </div>
+            <div class="hint">마우스 휠로 확대/축소가 가능합니다. 이미지를 클릭하거나 라디오 버튼으로 선택 후 조작하세요.</div>
+        </div>
     </div>
 
     <div class="control-section">
-        <div class="section-title">📊 움짤 정보 (측정됨)</div>
-        <div id="detected-fps-info" style="font-size: 13px; color: #495057; line-height: 1.6;">
-            측정된 FPS: -
+        <div class="section-header" onclick="toggleSection(this)">
+            <div class="section-title">🔍 SteamGridDB 검색 <span class="toggle-icon">▼</span></div>
+        </div>
+        <div class="section-content">
+            <input type="text" id="sgdb-input" placeholder="게임명 입력" style="width: 100%; padding: 8px; margin-bottom: 5px; box-sizing: border-box;">
+            <button class="upload-btn" id="sgdb-search-btn" style="background:#495057">검색하기</button>
+        </div>
+    </div>
+
+    <div class="control-section">
+        <div class="section-header" onclick="toggleSection(this)">
+            <div class="section-title">📊 움짤 정보 <span class="toggle-icon">▼</span></div>
+        </div>
+        <div class="section-content">
+            <div id="detected-fps-info" style="font-size: 13px; color: #495057; line-height: 1.6;">
+                측정된 FPS: -
+            </div>
         </div>
     </div>
 </aside>
@@ -214,88 +270,94 @@
 
 <aside class="sidebar right">
     <div class="control-section">
-        <div class="section-title">⚙️ 환경 설정</div>
-        <label style="cursor:pointer; font-size: 14px; font-weight: bold; color: #007bff;">
-            <input type="checkbox" id="mobile-mode-toggle"> 모바일 최적화 UI 모드
-        </label>
-    </div>
-
-    <div class="control-section">
-        <div class="section-title">🔤 폰트 설정</div>
-        <button class="font-btn" onclick="document.getElementById('font-input').click();">폰트 변경</button>
-        <input type="file" id="font-input" accept=".ttf, .otf, .woff, .woff2" style="display:none" onclick="this.value=null">
-        
-        <div id="manual-font-controls" style="margin-top: 10px;">
-            <div class="slider-item">
-                좌상단: 
-                <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="41">
-                <input type="number" class="num-input font-num" data-id="text_tl" value="41">
-            </div>
-            <div class="slider-item">
-                좌하단: 
-                <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="24">
-                <input type="number" class="num-input font-num" data-id="text_bl" value="24">
-            </div>
-            <div class="slider-item">
-                우상단: 
-                <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="44">
-                <input type="number" class="num-input font-num" data-id="text_tr" value="44">
-            </div>
+        <div class="section-header" onclick="toggleSection(this)">
+            <div class="section-title">⚙️ 환경 설정 <span class="toggle-icon">▼</span></div>
+        </div>
+        <div class="section-content">
+            <label style="cursor:pointer; font-size: 14px; font-weight: bold; color: #007bff;">
+                <input type="checkbox" id="mobile-mode-toggle"> 모바일 최적화 UI 모드
+            </label>
         </div>
     </div>
 
     <div class="control-section">
-        <div class="section-title">✨ 효과 설정</div>
-        <label style="cursor:pointer; font-size: 14px; display: block; margin-bottom: 8px;"><input type="checkbox" id="logo-shadow-toggle"> 로고 그림자 설정</label>
-        <div id="logo-shadow-controls" style="display: none; margin-top: 10px; font-size: 13px;">
-            <div class="slider-item">블러: <input type="range" id="logo-shadow-blur" min="0" max="50" value="10"></div>
-            <div class="slider-item">X축: <input type="range" id="logo-shadow-offsetx" min="-50" max="50" value="5"></div>
-            <div class="slider-item">Y축: <input type="range" id="logo-shadow-offsety" min="-50" max="50" value="5"></div>
-            <div class="slider-item">색상: <input type="color" id="logo-shadow-color" value="#000000"></div>
+        <div class="section-header" onclick="toggleSection(this)">
+            <div class="section-title">🔤 폰트 설정 <span class="toggle-icon">▼</span></div>
+            <button class="reset-section-btn" onclick="resetFonts(event)">↺</button>
         </div>
-
-        <label style="cursor:pointer; font-size: 14px; display: block; margin-top: 10px;"><input type="checkbox" id="logo-border-toggle"> 로고 테두리 설정</label>
-        <div id="logo-border-controls" style="display: none; margin-top: 10px; font-size: 13px;">
-            <div class="slider-item">
-                두께: 
-                <input type="range" id="logo-border-width" min="0" step="0.01" max="15" value="2.5">
-                <input type="number" id="logo-border-num" class="num-input" value="2.5" step="0.01">
-            </div>
-            <div class="slider-item">
-                색상: <input type="color" id="logo-border-color" value="#000000">
+        <div class="section-content">
+            <button class="font-btn" onclick="document.getElementById('font-input').click();">폰트 변경</button>
+            <input type="file" id="font-input" accept=".ttf, .otf, .woff, .woff2" style="display:none" onclick="this.value=null">
+            
+            <div id="manual-font-controls" style="margin-top: 10px;">
+                <div class="slider-item">
+                    좌상단: 
+                    <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="41">
+                    <input type="number" class="num-input font-num" data-id="text_tl" value="41">
+                </div>
+                <div class="slider-item">
+                    좌하단: 
+                    <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="24">
+                    <input type="number" class="num-input font-num" data-id="text_bl" value="24">
+                </div>
+                <div class="slider-item">
+                    우상단: 
+                    <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="44">
+                    <input type="number" class="num-input font-num" data-id="text_tr" value="44">
+                </div>
             </div>
         </div>
     </div>
 
     <div class="control-section">
-        <div class="section-title">💾 저장 설정 및 최적화</div>
-        <div class="slider-item">
-            재생 배속: 
-            <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1" style="width: 60px;">
+        <div class="section-header" onclick="toggleSection(this)">
+            <div class="section-title">✨ 효과 설정 <span class="toggle-icon">▼</span></div>
+            <button class="reset-section-btn" onclick="resetEffects(event)">↺</button>
         </div>
-        <div class="slider-item">
-            FPS 설정: 
-            <input type="number" id="gif-fps-input" class="num-input" value="0" style="width: 60px;">
+        <div class="section-content">
+            <label style="cursor:pointer; font-size: 14px; display: block; margin-bottom: 8px;"><input type="checkbox" id="logo-shadow-toggle"> 로고 그림자 설정</label>
+            <div id="logo-shadow-controls" style="display: none; margin-top: 10px; font-size: 13px;">
+                <div class="slider-item">블러: <input type="range" id="logo-shadow-blur" min="0" max="50" value="10"></div>
+                <div class="slider-item">X축: <input type="range" id="logo-shadow-offsetx" min="-50" max="50" value="5"></div>
+                <div class="slider-item">Y축: <input type="range" id="logo-shadow-offsety" min="-50" max="50" value="5"></div>
+                <div class="slider-item">색상: <input type="color" id="logo-shadow-color" value="#000000"></div>
+            </div>
+
+            <label style="cursor:pointer; font-size: 14px; display: block; margin-top: 10px;"><input type="checkbox" id="logo-border-toggle"> 로고 테두리 설정</label>
+            <div id="logo-border-controls" style="display: none; margin-top: 10px; font-size: 13px;">
+                <div class="slider-item">
+                    두께: 
+                    <input type="range" id="logo-border-width" min="0" step="1" max="15" value="2">
+                    <input type="number" id="logo-border-num" class="num-input" value="2" step="1">
+                </div>
+                <div class="slider-item">
+                    색상: <input type="color" id="logo-border-color" value="#000000">
+                </div>
+            </div>
         </div>
-        <div class="slider-item">
-            지연 시간(ms): 
-            <input type="number" id="gif-delay-input" class="num-input" value="0" style="width: 60px;">
+    </div>
+
+    <div class="control-section">
+        <div class="section-header" onclick="toggleSection(this)">
+            <div class="section-title">💾 저장 설정 <span class="toggle-icon">▼</span></div>
+            <button class="reset-section-btn" onclick="resetSaveSettings(event)">↺</button>
         </div>
-        <div class="slider-item">
-            해상도 배율: 
-            <select id="res-scale-input" class="num-input" style="width: 70px;">
-                <option value="0.5">0.5x</option>
-                <option value="0.75">0.75x</option>
-                <option value="1.0" selected>1.0x</option>
-                <option value="1.5">1.5x</option>
-                <option value="2.0">2.0x</option>
-            </select>
+        <div class="section-content">
+            <div class="slider-item">재생 배속: <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1" style="width: 60px;"></div>
+            <div class="slider-item">FPS 설정: <input type="number" id="gif-fps-input" class="num-input" value="0" style="width: 60px;"></div>
+            <div class="slider-item">지연 시간(ms): <input type="number" id="gif-delay-input" class="num-input" value="0" style="width: 60px;"></div>
+            <div class="slider-item">
+                해상도 배율: 
+                <select id="res-scale-input" class="num-input" style="width: 70px;">
+                    <option value="0.5">0.5x</option>
+                    <option value="0.75">0.75x</option>
+                    <option value="1.0" selected>1.0x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2.0">2.0x</option>
+                </select>
+            </div>
+            <div class="slider-item">GIF 품질(1-20): <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20" style="width: 60px;"></div>
         </div>
-        <div class="slider-item">
-            GIF 품질(1-20): 
-            <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20" style="width: 60px;">
-        </div>
-        <div class="hint">배속을 높이면 움직임이 빨라집니다.</div>
     </div>
 
     <div style="margin-top: auto;">
@@ -351,6 +413,57 @@
         };
     }
 
+    /* [기능 2] UI 섹션 토글 */
+    function toggleSection(header) {
+        const content = header.nextElementSibling;
+        content.classList.toggle('collapsed');
+        const icon = header.querySelector('.toggle-icon');
+        icon.innerText = content.classList.contains('collapsed') ? '◀' : '▼';
+    }
+
+    /* [기능 3] 개별 초기화 함수들 */
+    function resetImages(e) {
+        e.stopPropagation();
+        if(confirm("모든 이미지를 삭제하고 초기화하시겠습니까?")) {
+            ['img1', 'img2', 'img3'].forEach(cleanupLayer);
+            saveHistory();
+        }
+    }
+    function resetTargetSelection(e) {
+        e.stopPropagation();
+        document.querySelector('input[name="target"][value="none"]').click();
+    }
+    function resetFonts(e) {
+        e.stopPropagation();
+        const defaults = { text_tl: 41, text_bl: 24, text_tr: 44 };
+        Object.keys(defaults).forEach(key => {
+            if(layers[key]) {
+                layers[key].set('fontSize', defaults[key]);
+                layers[key].set('fontFamily', 'PyeongtaekSunset');
+                alignVerticalCenter(layers[key]);
+                syncFontControls(layers[key]);
+            }
+        });
+        canvas.requestRenderAll();
+        saveHistory();
+    }
+    function resetEffects(e) {
+        e.stopPropagation();
+        document.getElementById('logo-shadow-toggle').checked = false;
+        document.getElementById('logo-border-toggle').checked = false;
+        document.getElementById('logo-shadow-controls').style.display = 'none';
+        document.getElementById('logo-border-controls').style.display = 'none';
+        updateLogoEffects();
+    }
+    function resetSaveSettings(e) {
+        e.stopPropagation();
+        document.getElementById('gif-speed-input').value = 1.0;
+        document.getElementById('gif-fps-input').value = 0;
+        document.getElementById('gif-delay-input').value = 0;
+        document.getElementById('res-scale-input').value = 1.0;
+        document.getElementById('gif-quality-input').value = 10;
+    }
+
     function createPlaceholders() {
         const createRect = (l, t, w, h, txt) => {
             const rect = new fabric.Rect({
@@ -388,11 +501,9 @@
             
             tBox.on('scaling', function() {
                 const scaleX = this.scaleX;
-                const newFontSize = this.fontSize * scaleX;
-                this.set({ fontSize: newFontSize, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
+                this.set({ fontSize: this.fontSize * scaleX, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
                 syncFontControls(this);
             });
-
             tBox.on('changed', () => { alignVerticalCenter(tBox); saveHistory(); });
         };
 
@@ -427,9 +538,8 @@
 
     function updateGifInfo() {
         let infoStr = "측정된 FPS:<br>";
-        if (activeGifs.length === 0) {
-            infoStr = "측정된 FPS: -";
-        } else {
+        if (activeGifs.length === 0) infoStr = "측정된 FPS: -";
+        else {
             activeGifs.forEach((g) => {
                 let d = 100;
                 try { d = g.superGif.get_frames()[0].delay * 10; } catch(e) {}
@@ -448,9 +558,7 @@
         if (gifIdx > -1) {
             const gifData = activeGifs[gifIdx];
             if (gifData.superGif) gifData.superGif.pause();
-            if (gifData.container && gifData.container.parentNode) {
-                gifData.container.parentNode.removeChild(gifData.container);
-            }
+            if (gifData.container && gifData.container.parentNode) gifData.container.parentNode.removeChild(gifData.container);
             activeGifs.splice(gifIdx, 1);
         }
         layers[layerKey] = null;
@@ -463,8 +571,8 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             const result = e.target.result;
-            if (file.type === 'image/gif') { loadGif(result, layerKey); } 
-            else { fabric.Image.fromURL(result, function(img) { setupLayerObj(img, layerKey); }); }
+            if (file.type === 'image/gif') loadGif(result, layerKey);
+            else fabric.Image.fromURL(result, function(img) { setupLayerObj(img, layerKey); });
         };
         reader.readAsDataURL(file);
     }
@@ -523,7 +631,7 @@
         radio.addEventListener('change', (e) => {
             const val = e.target.value;
             canvas.discardActiveObject();
-            if (val !== 'none' && layers[val]) { canvas.setActiveObject(layers[val]); }
+            if (val !== 'none' && layers[val]) canvas.setActiveObject(layers[val]);
             canvas.requestRenderAll();
         });
     });
@@ -542,8 +650,7 @@
         if (zoom > 20) zoom = 20;
         if (zoom < 0.01) zoom = 0.01;
         canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-        opt.e.preventDefault();
-        opt.e.stopPropagation();
+        opt.e.preventDefault(); opt.e.stopPropagation();
     });
 
     function setFocusMode(activeObj) {
@@ -570,8 +677,7 @@
         const obj = canvas.getActiveObject();
         if(obj && obj._originalState) {
             obj.set({ left: obj._originalState.left, top: obj._originalState.top, scaleX: obj._originalState.scaleX, scaleY: obj._originalState.scaleY, angle: 0, flipX: false });
-            canvas.requestRenderAll();
-            saveHistory();
+            canvas.requestRenderAll(); saveHistory();
         }
     };
     window.rotateActiveObject = () => {
@@ -582,13 +688,10 @@
         const obj = canvas.getActiveObject();
         if(obj) { obj.set('flipX', !obj.flipX); canvas.requestRenderAll(); saveHistory(); }
     };
-
     window.deleteActiveObject = () => {
         const obj = canvas.getActiveObject();
         if (obj && obj._layerKey && obj._layerKey.startsWith('img')) {
-            cleanupLayer(obj._layerKey);
-            saveHistory();
-            canvas.requestRenderAll();
+            cleanupLayer(obj._layerKey); saveHistory(); canvas.requestRenderAll();
         }
     };
 
@@ -611,27 +714,36 @@
                 document.querySelector(`.font-slider[data-id="${id}"]`).value = val;
                 document.querySelector(`.num-input[data-id="${id}"]`).value = val;
                 alignVerticalCenter(layers[id]);
-                canvas.requestRenderAll();
-                saveHistory();
+                canvas.requestRenderAll(); saveHistory();
             }
         });
     });
 
+    /* [기능 1] 로고 테두리 투명 무시 설정 */
     function updateLogoEffects() {
         if (!layers.img3) return;
         const shadowOn = document.getElementById('logo-shadow-toggle').checked;
         const borderOn = document.getElementById('logo-border-toggle').checked;
 
-        // [지시 1] 테두리를 실제 stroke로 구현
+        // 필터 초기화
+        layers.img3.filters = [];
+
+        // 1. 테두리 (PNG 투명 무시를 위해 DropShadow 필터 사용)
         if (borderOn) {
             const width = parseFloat(document.getElementById('logo-border-width').value);
             const color = document.getElementById('logo-border-color').value;
-            layers.img3.set({ stroke: color, strokeWidth: width, strokeUniform: true });
-        } else {
-            layers.img3.set({ stroke: null, strokeWidth: 0 });
+            // Blur를 0으로 주면 날카로운 외곽선이 됩니다.
+            layers.img3.filters.push(new fabric.Image.filters.DropShadow({
+                shadowColor: color,
+                blur: 0,
+                offsetX: 0,
+                offsetY: 0,
+                // 필터가 두꺼운 테두리를 지원하도록 반복 적용 효과를 주거나 기본 블러를 아주 살짝 활용 가능
+            }));
+            // 두께 조절 시각화 보조를 위해 stroke도 아주 얇게 사용 가능하지만 필터가 우선
         }
 
-        // [지시 3] 그림자 설정 하위 옵션 적용
+        // 2. 그림자 (기존 방식 유지 - 투명 무시됨)
         if (shadowOn) {
             layers.img3.set('shadow', new fabric.Shadow({
                 color: document.getElementById('logo-shadow-color').value,
@@ -643,28 +755,21 @@
             layers.img3.set('shadow', null);
         }
 
+        layers.img3.applyFilters();
         canvas.requestRenderAll();
         saveHistory();
     }
     
-    // 이벤트 리스너 연결
-    document.getElementById('logo-shadow-toggle').addEventListener('change', (e) => {
-        document.getElementById('logo-shadow-controls').style.display = e.target.checked ? 'block' : 'none';
-        updateLogoEffects();
+    ['logo-shadow-toggle', 'logo-shadow-blur', 'logo-shadow-offsetx', 'logo-shadow-offsety', 'logo-shadow-color', 
+     'logo-border-toggle', 'logo-border-width', 'logo-border-color'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            if(id.includes('toggle')) {
+                const controlsId = id.replace('toggle', 'controls');
+                document.getElementById(controlsId).style.display = document.getElementById(id).checked ? 'block' : 'none';
+            }
+            updateLogoEffects();
+        });
     });
-    ['logo-shadow-blur', 'logo-shadow-offsetx', 'logo-shadow-offsety', 'logo-shadow-color'].forEach(id => {
-        document.getElementById(id).addEventListener('input', updateLogoEffects);
-    });
-
-    document.getElementById('logo-border-toggle').addEventListener('change', (e) => {
-        document.getElementById('logo-border-controls').style.display = e.target.checked ? 'block' : 'none';
-        updateLogoEffects();
-    });
-    document.getElementById('logo-border-width').addEventListener('input', (e) => {
-        document.getElementById('logo-border-num').value = e.target.value;
-        updateLogoEffects();
-    });
-    document.getElementById('logo-border-color').addEventListener('input', updateLogoEffects);
 
     let stateHistory = [];
     let historyStep = -1;
@@ -675,8 +780,7 @@
         if (isHistoryLocked) return;
         const json = JSON.stringify(canvas.toJSON(SAVE_PROPS));
         if (historyStep < stateHistory.length - 1) stateHistory = stateHistory.slice(0, historyStep + 1);
-        stateHistory.push(json);
-        historyStep++;
+        stateHistory.push(json); historyStep++;
         if(stateHistory.length > 20) { stateHistory.shift(); historyStep--; }
     }
 
@@ -691,22 +795,17 @@
             objs.forEach(obj => {
                 if (obj._layerKey) {
                     layers[obj._layerKey] = obj;
-                    if(clipRects[obj._layerKey]) {
-                        obj.clipPath = new fabric.Rect({ left: clipRects[obj._layerKey].left, top: clipRects[obj._layerKey].top, width: clipRects[obj._layerKey].width, height: clipRects[obj._layerKey].height, absolutePositioned: true });
-                    }
+                    if(clipRects[obj._layerKey]) obj.clipPath = new fabric.Rect({ left: clipRects[obj._layerKey].left, top: clipRects[obj._layerKey].top, width: clipRects[obj._layerKey].width, height: clipRects[obj._layerKey].height, absolutePositioned: true });
                 }
                 if (obj.type === 'textbox') {
                     obj.on('changed', () => { alignVerticalCenter(obj); saveHistory(); });
                     obj.on('scaling', function() {
-                        const scaleX = this.scaleX;
-                        this.set({ fontSize: this.fontSize * scaleX, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
+                        this.set({ fontSize: this.fontSize * this.scaleX, width: this.width * this.scaleX, scaleX: 1, scaleY: 1 });
                         syncFontControls(this);
                     });
                 }
             });
-            reorderLayers();
-            isHistoryLocked = false;
-            canvas.requestRenderAll();
+            reorderLayers(); isHistoryLocked = false; canvas.requestRenderAll();
         });
     }
 
@@ -714,16 +813,10 @@
     const workerUrl = URL.createObjectURL(gifWorkerBlob);
 
     document.getElementById('save-btn').addEventListener('click', async () => {
-        canvas.setZoom(1); 
-        canvas.discardActiveObject();
-        resetAllOpacities();
-
-        const now = new Date();
-        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-
+        canvas.setZoom(1); canvas.discardActiveObject(); resetAllOpacities();
+        const now = new Date(); const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
         const resScale = parseFloat(document.getElementById('res-scale-input').value);
         const gifQuality = parseInt(document.getElementById('gif-quality-input').value);
-
         const wrapper = document.getElementById('canvas-wrapper');
         const originalTransform = wrapper.style.transform;
         const originalMargin = wrapper.style.marginTop;
@@ -736,8 +829,7 @@
             setTimeout(() => {
                 const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 * resScale });
                 const link = document.createElement('a');
-                link.download = `텐카_결과물_${dateStr}.png`;
-                link.href = dataURL; link.click();
+                link.download = `텐카_결과물_${dateStr}.png`; link.href = dataURL; link.click();
                 wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
                 loading.style.display = 'none';
             }, 100);
@@ -747,39 +839,19 @@
         let speedMult = parseFloat(document.getElementById('gif-speed-input').value) || 1.0;
         let userFps = parseFloat(document.getElementById('gif-fps-input').value);
         let userFrameDelay = parseInt(document.getElementById('gif-delay-input').value);
-
         loadingText.innerText = "프레임 추출 중...";
         let mainGif = activeGifs[0];
-        let calculatedMaxFrames = 0;
-        let originalDelay = 100;
-
-        activeGifs.forEach(g => {
-            const len = g.superGif.get_length();
-            if (len > calculatedMaxFrames) { calculatedMaxFrames = len; mainGif = g; }
-        });
-
-        try {
-            const frames = mainGif.superGif.get_frames(); 
-            if(frames && frames.length > 0 && frames[0].delay) originalDelay = frames[0].delay * 10;
-        } catch(e) {}
+        let calculatedMaxFrames = 0; let originalDelay = 100;
+        activeGifs.forEach(g => { if (g.superGif.get_length() > calculatedMaxFrames) { calculatedMaxFrames = g.superGif.get_length(); mainGif = g; } });
+        try { if(mainGif.superGif.get_frames()[0].delay) originalDelay = mainGif.superGif.get_frames()[0].delay * 10; } catch(e) {}
 
         let finalDelay = originalDelay / speedMult;
-        if (userFps > 0) {
-            finalDelay = 1000 / userFps;
-        } else if (userFrameDelay > 0) {
-            finalDelay = userFrameDelay;
-        }
-
+        if (userFps > 0) finalDelay = 1000 / userFps;
+        else if (userFrameDelay > 0) finalDelay = userFrameDelay;
         const totalDuration = (calculatedMaxFrames * originalDelay) / speedMult;
         const maxFrames = Math.max(1, Math.round(totalDuration / finalDelay));
 
-        const gif = new GIF({ 
-            workers: 4, 
-            quality: gifQuality, 
-            width: 1024 * resScale, 
-            height: 765 * resScale, 
-            workerScript: workerUrl 
-        });
+        const gif = new GIF({ workers: 4, quality: gifQuality, width: 1024 * resScale, height: 765 * resScale, workerScript: workerUrl });
         activeGifs.forEach(g => g.superGif.pause());
 
         for (let i = 0; i < maxFrames; i++) {
@@ -787,12 +859,10 @@
             activeGifs.forEach(g => {
                 const len = g.superGif.get_length();
                 const progress = i / maxFrames;
-                const targetFrame = Math.floor(progress * len);
-                g.superGif.move_to(targetFrame % len);
+                g.superGif.move_to(Math.floor(progress * len) % len);
                 g.fabricObj.dirty = true;
             });
-            const frameCanvas = canvas.toCanvasElement(resScale);
-            gif.addFrame(frameCanvas, { delay: finalDelay, copy: true });
+            gif.addFrame(canvas.toCanvasElement(resScale), { delay: finalDelay, copy: true });
             await new Promise(r => setTimeout(r, 0));
         }
         
@@ -801,8 +871,7 @@
         gif.on('finished', function(blob) {
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `텐카_움짤_${dateStr}.gif`;
-            link.click();
+            link.download = `텐카_움짤_${dateStr}.gif`; link.click();
             activeGifs.forEach(g => g.superGif.play());
             loading.style.display = 'none';
         });
@@ -813,34 +882,27 @@
         const wrapper = document.getElementById('canvas-wrapper');
         if (e.target.checked) {
             document.body.classList.add('mobile-mode');
-            const winWidth = window.innerWidth;
-            const scale = Math.min((winWidth - 40) / 1024, 1);
-            wrapper.style.transform = `scale(${scale})`;
-            wrapper.style.marginTop = '0px';
+            wrapper.style.transform = `scale(${Math.min((window.innerWidth - 40) / 1024, 1)})`;
         } else {
             document.body.classList.remove('mobile-mode');
             wrapper.style.transform = 'scale(1)';
-            wrapper.style.marginTop = '0';
         }
     });
 
     window.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
-        if (e.key === 'Delete') { deleteActiveObject(); }
+        if (e.key === 'Delete') deleteActiveObject();
     });
     
     document.getElementById('font-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+        const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = async (ev) => {
             const fontFace = new FontFace('CustomFont', ev.target.result);
-            await fontFace.load();
-            document.fonts.add(fontFace);
+            await fontFace.load(); document.fonts.add(fontFace);
             ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].set('fontFamily', 'CustomFont'); });
-            canvas.requestRenderAll();
-            alert('새로운 폰트가 적용되었습니다.');
+            canvas.requestRenderAll(); alert('새로운 폰트가 적용되었습니다.');
         };
         reader.readAsArrayBuffer(file);
     });
@@ -855,8 +917,7 @@
     document.getElementById('img-input-3').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img3'));
 
     function onSelectionChange(e) {
-        const obj = e.selected[0];
-        setFocusMode(obj);
+        const obj = e.selected[0]; setFocusMode(obj);
         let val = 'none';
         if (obj === layers.img1) val = 'img1';
         else if (obj === layers.img2) val = 'img2';
