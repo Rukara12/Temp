@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터 (FFmpeg 최적화판)</title>
+    <title>텐카 템플릿 - 에디터 (GitHub Pages 호환판)</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -400,9 +400,9 @@
 
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js"></script>
-<!-- [변경] FFmpeg 관련 스크립트 추가 (gif.js 제거됨) -->
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-<script src="https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"></script>
+<!-- [변경] FFmpeg v0.12 (단일 스레드 호환 버전) -->
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
 <script>
     const canvas = new fabric.Canvas('c', {
@@ -426,12 +426,22 @@
 
     let activeGifs = [];
 
-    // [변경] FFmpeg 초기화
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ 
-        log: true,
-        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-    });
+    // [변경] FFmpeg v0.12 초기화 (SharedArrayBuffer 불필요)
+    const { FFmpeg } = window.FFmpegWASM;
+    const { fetchFile } = window.FFmpegUtil;
+    let ffmpeg = null;
+
+    async function initFFmpeg() {
+        if (ffmpeg) return;
+        ffmpeg = new FFmpeg();
+        ffmpeg.on('log', ({ message }) => {
+            console.log('[FFmpeg]', message);
+        });
+        // 단일 스레드 Core 로드 (GitHub Pages 호환)
+        await ffmpeg.load({
+            coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+        });
+    }
 
     document.fonts.ready.then(() => { initCanvas(); });
 
@@ -893,7 +903,7 @@
         });
     }
 
-    // [변경] 저장 버튼 클릭 이벤트 (FFmpeg 적용)
+    // [변경] 저장 버튼 클릭 이벤트 (FFmpeg v0.12 적용)
     document.getElementById('save-btn').addEventListener('click', async () => {
         canvas.discardActiveObject();
         resetAllOpacities();
@@ -911,7 +921,6 @@
         const loadingText = document.getElementById('loading-text');
         loading.style.display = 'flex';
 
-        // GIF가 하나도 없는 경우: 단순 이미지 다운로드
         if (activeGifs.length === 0) {
             setTimeout(() => {
                 const dataURL = canvas.toDataURL({ format: 'png', multiplier: resScale });
@@ -925,13 +934,11 @@
         }
 
         try {
-            // 1. FFmpeg 로드 확인
-            if (!ffmpeg.isLoaded()) {
-                loadingText.innerText = "FFmpeg 엔진 로딩 중... (최초 1회)";
-                await ffmpeg.load();
-            }
+            // 1. FFmpeg 로드 (싱글 스레드)
+            loadingText.innerText = "FFmpeg 엔진 로딩 중... (최초 1회)";
+            await initFFmpeg();
 
-            // 2. 프레임 계산 로직
+            // 2. 프레임 계산
             let speedMult = parseFloat(document.getElementById('gif-speed-input').value) || 1.0;
             let userFps = parseFloat(document.getElementById('gif-fps-input').value);
             let userFrameDelay = parseInt(document.getElementById('gif-delay-input').value);
@@ -957,13 +964,12 @@
 
             activeGifs.forEach(g => g.superGif.pause());
 
-            // 3. 프레임별 캡처 및 FFmpeg 가상 파일 쓰기
+            // 3. 프레임별 캡처 및 가상 파일 쓰기
             const frameFileNames = [];
             
             for (let i = 0; i < maxFrames; i++) {
                 loadingText.innerText = `프레임 캡처 중 (${i + 1}/${maxFrames})`;
                 
-                // 각 GIF를 적절한 프레임으로 이동
                 activeGifs.forEach(g => {
                     const len = g.superGif.get_length();
                     const progress = i / maxFrames;
@@ -972,48 +978,46 @@
                     g.fabricObj.dirty = true;
                 });
                 
-                // 렌더링 및 캡처
                 canvas.renderAll();
                 const dataURL = canvas.toDataURL({ format: 'png', multiplier: resScale });
-                
-                // FFmpeg FS에 파일 쓰기 (frame001.png, frame002.png ...)
                 const fileName = `frame${String(i).padStart(3, '0')}.png`;
                 frameFileNames.push(fileName);
-                await ffmpeg.FS('writeFile', fileName, await fetchFile(dataURL));
                 
-                await new Promise(r => setTimeout(r, 0)); // UI 블로킹 방지
+                // v0.12 API: writeFile
+                await ffmpeg.writeFile(fileName, await fetchFile(dataURL));
+                
+                await new Promise(r => setTimeout(r, 0));
             }
 
-            // 4. FFmpeg 인코딩 실행 (최적화 필터 적용)
+            // 4. FFmpeg 인코딩 (v0.12 API: exec)
             loadingText.innerText = "최적화 인코딩 중... (고화질/저용량)";
             const finalFps = (userFps > 0) ? userFps : (1000 / finalDelay);
             const w = 1024 * resScale;
-            // scale 필터: 너비 고정, 높이 자동(-1). lanczos는 고품질 리사이징 알고리즘
-            // split+palettegen+paletteuse: 최적의 색상 팔레트 생성 후 적용 (용량 감소 핵심)
-            await ffmpeg.run(
+            
+            await ffmpeg.exec([
                 '-framerate', String(finalFps),
                 '-i', 'frame%03d.png',
                 '-vf', `scale=${w}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
                 'output.gif'
-            );
+            ]);
 
-            // 5. 결과물 다운로드
-            const data = ffmpeg.FS('readFile', 'output.gif');
+            // 5. 결과물 읽기 (v0.12 API: readFile)
+            const data = await ffmpeg.readFile('output.gif');
             const blob = new Blob([data.buffer], { type: 'image/gif' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `텐카_움짤_${dateStr}.gif`;
             link.click();
 
-            // 6. 정리 (메모리 해제)
-            ffmpeg.FS('unlink', 'output.gif');
+            // 6. 정리 (v0.12 API: deleteFile)
+            await ffmpeg.deleteFile('output.gif');
             for (const name of frameFileNames) {
-                ffmpeg.FS('unlink', name);
+                await ffmpeg.deleteFile(name);
             }
 
         } catch (err) {
             console.error(err);
-            alert('인코딩 중 오류가 발생했습니다: ' + err.message + '\n(서버의 SharedArrayBuffer 설정이 필요할 수 있습니다)');
+            alert('인코딩 중 오류가 발생했습니다: ' + err.message);
         } finally {
             activeGifs.forEach(g => g.superGif.play());
             wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
