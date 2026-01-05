@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터 (이동/저장 수정판)</title>
+    <title>텐카 템플릿 - 에디터 (UI/초기화 개선판)</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -109,20 +109,32 @@
             transition: transform 0.2s;
         }
 
-        /* 초기화 버튼 스타일 */
+        /* 초기화 버튼 스타일 및 정렬 */
         .reset-mini-btn {
-            background: none;
-            border: none;
-            color: #adb5bd;
-            font-size: 12px;
+            background: #f1f3f5;
+            border: 1px solid #dee2e6;
+            color: #868e96;
+            font-size: 11px;
             cursor: pointer;
-            padding: 0 4px;
-            margin-left: 5px;
+            padding: 2px 5px;
+            margin-left: 8px;
+            border-radius: 4px;
             display: inline-flex;
             align-items: center;
-            transition: color 0.2s;
+            transition: all 0.2s;
+            vertical-align: middle;
         }
-        .reset-mini-btn:hover { color: #dc3545; }
+        .reset-mini-btn:hover { 
+            background: #e9ecef;
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .label-with-reset {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+        }
 
         /* 캔버스 컨테이너 */
         .canvas-container-wrapper {
@@ -135,7 +147,7 @@
         }
 
         /* 버튼 및 입력창 */
-        button { 
+        button:not(.reset-mini-btn) { 
             width: 100%;
             padding: 10px; 
             font-size: 14px; 
@@ -286,17 +298,17 @@
             
             <div id="manual-font-controls" style="margin-top: 10px;">
                 <div class="slider-item">
-                    <span>좌상단:<button class="reset-mini-btn" onclick="resetInputValue('text_tl', 41, true)">↺</button></span>
+                    <div class="label-with-reset">좌상단 <button class="reset-mini-btn" onclick="resetInputValue('text_tl', 41, true)">↺</button></div>
                     <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="41">
                     <input type="number" class="num-input font-num" data-id="text_tl" value="41">
                 </div>
                 <div class="slider-item">
-                    <span>좌하단:<button class="reset-mini-btn" onclick="resetInputValue('text_bl', 24, true)">↺</button></span>
+                    <div class="label-with-reset">좌하단 <button class="reset-mini-btn" onclick="resetInputValue('text_bl', 24, true)">↺</button></div>
                     <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="24">
                     <input type="number" class="num-input font-num" data-id="text_bl" value="24">
                 </div>
                 <div class="slider-item">
-                    <span>우상단:<button class="reset-mini-btn" onclick="resetInputValue('text_tr', 44, true)">↺</button></span>
+                    <div class="label-with-reset">우상단 <button class="reset-mini-btn" onclick="resetInputValue('text_tr', 44, true)">↺</button></div>
                     <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="44">
                     <input type="number" class="num-input font-num" data-id="text_tr" value="44">
                 </div>
@@ -310,10 +322,12 @@
             <span class="toggle-arrow">▼</span>
         </div>
         <div class="section-content">
-            <label style="cursor:pointer; font-size: 14px; display: block; margin-bottom: 8px;">
-                <input type="checkbox" id="logo-shadow-toggle"> 로고 그림자 설정
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <label style="cursor:pointer; font-size: 14px; display: flex; align-items: center;">
+                    <input type="checkbox" id="logo-shadow-toggle" style="margin-right: 5px;"> 로고 그림자 설정
+                </label>
                 <button class="reset-mini-btn" onclick="resetShadow()">↺</button>
-            </label>
+            </div>
             <div id="logo-shadow-controls" style="display: none; margin-top: 10px; font-size: 13px;">
                 <div class="slider-item">블러: <input type="range" id="logo-shadow-blur" min="0" max="50" value="10"></div>
                 <div class="slider-item">X축: <input type="range" id="logo-shadow-offsetx" min="-50" max="50" value="5"></div>
@@ -321,10 +335,12 @@
                 <div class="slider-item">색상: <input type="color" id="logo-shadow-color" value="#000000"></div>
             </div>
 
-            <label style="cursor:pointer; font-size: 14px; display: block; margin-top: 10px;">
-                <input type="checkbox" id="logo-border-toggle"> 로고 테두리 설정
+            <div style="display: flex; align-items: center; margin-top: 10px;">
+                <label style="cursor:pointer; font-size: 14px; display: flex; align-items: center;">
+                    <input type="checkbox" id="logo-border-toggle" style="margin-right: 5px;"> 로고 테두리 설정
+                </label>
                 <button class="reset-mini-btn" onclick="resetBorder()">↺</button>
-            </label>
+            </div>
             <div id="logo-border-controls" style="display: none; margin-top: 10px; font-size: 13px;">
                 <div class="slider-item">
                     두께: 
@@ -345,19 +361,19 @@
         </div>
         <div class="section-content">
             <div class="slider-item">
-                <span>배속:<button class="reset-mini-btn" onclick="resetPlainInput('gif-speed-input', 1.0)">↺</button></span>
+                <div class="label-with-reset">배속 <button class="reset-mini-btn" onclick="resetPlainInput('gif-speed-input', 1.0)">↺</button></div>
                 <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1">
             </div>
             <div class="slider-item">
-                <span>FPS:<button class="reset-mini-btn" onclick="resetPlainInput('gif-fps-input', 0)">↺</button></span>
+                <div class="label-with-reset">FPS <button class="reset-mini-btn" onclick="resetPlainInput('gif-fps-input', 0)">↺</button></div>
                 <input type="number" id="gif-fps-input" class="num-input" value="0">
             </div>
             <div class="slider-item">
-                <span>지연(ms):<button class="reset-mini-btn" onclick="resetPlainInput('gif-delay-input', 0)">↺</button></span>
+                <div class="label-with-reset">지연(ms) <button class="reset-mini-btn" onclick="resetPlainInput('gif-delay-input', 0)">↺</button></div>
                 <input type="number" id="gif-delay-input" class="num-input" value="0">
             </div>
             <div class="slider-item">
-                <span>배율:<button class="reset-mini-btn" onclick="resetPlainInput('res-scale-input', '1.0')">↺</button></span>
+                <div class="label-with-reset">배율 <button class="reset-mini-btn" onclick="resetPlainInput('res-scale-input', '1.0')">↺</button></div>
                 <select id="res-scale-input" class="num-input" style="width: 70px;">
                     <option value="0.5">0.5x</option>
                     <option value="0.75">0.75x</option>
@@ -367,7 +383,7 @@
                 </select>
             </div>
             <div class="slider-item">
-                <span>품질:<button class="reset-mini-btn" onclick="resetPlainInput('gif-quality-input', 10)">↺</button></span>
+                <div class="label-with-reset">품질 <button class="reset-mini-btn" onclick="resetPlainInput('gif-quality-input', 10)">↺</button></div>
                 <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20">
             </div>
         </div>
@@ -441,21 +457,19 @@
     }
 
     function resetShadow() {
-        document.getElementById('logo-shadow-toggle').checked = false;
+        // 체크박스 상태는 유지하고 슬라이더만 초기화
         document.getElementById('logo-shadow-blur').value = 10;
         document.getElementById('logo-shadow-offsetx').value = 5;
         document.getElementById('logo-shadow-offsety').value = 5;
         document.getElementById('logo-shadow-color').value = "#000000";
-        document.getElementById('logo-shadow-controls').style.display = 'none';
         updateLogoEffects();
     }
 
     function resetBorder() {
-        document.getElementById('logo-border-toggle').checked = false;
+        // 체크박스 상태는 유지하고 슬라이더만 초기화
         document.getElementById('logo-border-width').value = 2.5;
         document.getElementById('logo-border-num').value = 2.5;
         document.getElementById('logo-border-color').value = "#000000";
-        document.getElementById('logo-border-controls').style.display = 'none';
         updateLogoEffects();
     }
 
@@ -864,12 +878,9 @@
     const gifWorkerBlob = new Blob([`importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');`], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(gifWorkerBlob);
 
-    // 저장 버튼 클릭 이벤트 (뷰포트 초기화 로직 추가됨)
+    // 저장 버튼 클릭 이벤트
     document.getElementById('save-btn').addEventListener('click', async () => {
-        // 현재 줌과 이동 상태를 저장해둡니다.
         const originalVpt = canvas.viewportTransform.slice();
-        
-        // 저장을 위해 뷰포트를 초기 상태(1:1 비율, 0,0 좌표)로 리셋합니다.
         canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
         canvas.discardActiveObject();
         resetAllOpacities();
@@ -894,8 +905,6 @@
                 const link = document.createElement('a');
                 link.download = `텐카_결과물_${dateStr}.png`;
                 link.href = dataURL; link.click();
-                
-                // 저장 완료 후 원래 사용자가 보던 뷰로 복구합니다.
                 canvas.setViewportTransform(originalVpt);
                 wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
                 loading.style.display = 'none';
@@ -954,8 +963,6 @@
             link.download = `텐카_움짤_${dateStr}.gif`;
             link.click();
             activeGifs.forEach(g => g.superGif.play());
-            
-            // 저장 완료 후 원래 사용자가 보던 뷰로 복구합니다.
             canvas.setViewportTransform(originalVpt);
             wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
             loading.style.display = 'none';
