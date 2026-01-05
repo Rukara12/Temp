@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터 (UI 개선판)</title>
+    <title>텐카 템플릿 - 에디터 (이동/저장 수정판)</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -99,7 +99,7 @@
             user-select: none;
         }
         .section-content {
-            display: block; /* 기본은 펼침 */
+            display: block;
         }
         .section-content.collapsed {
             display: none;
@@ -107,9 +107,6 @@
         .toggle-arrow {
             font-size: 10px;
             transition: transform 0.2s;
-        }
-        .collapsed + .section-content {
-            display: none;
         }
 
         /* 초기화 버튼 스타일 */
@@ -231,7 +228,7 @@
                     <button onclick="deleteActiveObject()" style="font-size: 12px; padding: 5px; background: #dc3545; color: white; border: none;">삭제</button>
                 </div>
             </div>
-            <div class="hint">마우스 휠로 확대/축소가 가능합니다. 이미지를 클릭하거나 라디오 버튼으로 선택 후 조작하세요.</div>
+            <div class="hint">마우스 휠로 확대/축소, <b>Alt+드래그</b>로 화면 이동이 가능합니다.</div>
         </div>
     </div>
 
@@ -661,6 +658,7 @@
         document.querySelector('input[name="target"][value="none"]').checked = true;
     });
 
+    // 마우스 휠 줌 기능
     canvas.on('mouse:wheel', function(opt) {
         var delta = opt.e.deltaY;
         var zoom = canvas.getZoom();
@@ -670,6 +668,32 @@
         canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
         opt.e.preventDefault();
         opt.e.stopPropagation();
+    });
+
+    // 작업창 드래그 이동 기능 (Alt + 드래그)
+    canvas.on('mouse:down', function(opt) {
+        const evt = opt.e;
+        if (evt.altKey === true) {
+            this.isDragging = true;
+            this.selection = false;
+            this.lastPosX = evt.clientX;
+            this.lastPosY = evt.clientY;
+        }
+    });
+    canvas.on('mouse:move', function(opt) {
+        if (this.isDragging) {
+            const e = opt.e;
+            const vpt = this.viewportTransform;
+            vpt[4] += e.clientX - this.lastPosX;
+            vpt[5] += e.clientY - this.lastPosY;
+            this.requestRenderAll();
+            this.lastPosX = e.clientX;
+            this.lastPosY = e.clientY;
+        }
+    });
+    canvas.on('mouse:up', function(opt) {
+        this.setViewportTransform(this.viewportTransform);
+        this.isDragging = false;
     });
 
     function setFocusMode(activeObj) {
@@ -747,39 +771,31 @@
         if (!layers.img3) return;
         const shadowOn = document.getElementById('logo-shadow-toggle').checked;
         const borderOn = document.getElementById('logo-border-toggle').checked;
-
         layers.img3.set({ stroke: null, strokeWidth: 0, shadow: null });
-
         if (!shadowOn && !borderOn) {
             delete layers.img3._render;
             canvas.requestRenderAll();
             return;
         }
-
         layers.img3._render = function(ctx) {
             const el = this._element;
             if (!el) return;
             ctx.save();
-            const w = this.width;
-            const h = this.height;
-
+            const w = this.width; const h = this.height;
             if (borderOn) {
                 const bWidth = parseFloat(document.getElementById('logo-border-width').value);
                 const bColor = document.getElementById('logo-border-color').value;
                 ctx.filter = `drop-shadow(${bWidth}px 0 0 ${bColor}) drop-shadow(-${bWidth}px 0 0 ${bColor}) drop-shadow(0 ${bWidth}px 0 ${bColor}) drop-shadow(0 -${bWidth}px 0 ${bColor})`;
             }
-
             if (shadowOn) {
                 ctx.shadowColor = document.getElementById('logo-shadow-color').value;
                 ctx.shadowBlur = parseInt(document.getElementById('logo-shadow-blur').value);
                 ctx.shadowOffsetX = parseInt(document.getElementById('logo-shadow-offsetx').value);
                 ctx.shadowOffsetY = parseInt(document.getElementById('logo-shadow-offsety').value);
             }
-
             ctx.drawImage(el, -w/2, -h/2, w, h);
             ctx.restore();
         };
-
         canvas.requestRenderAll();
         saveHistory();
     }
@@ -791,7 +807,6 @@
     ['logo-shadow-blur', 'logo-shadow-offsetx', 'logo-shadow-offsety', 'logo-shadow-color'].forEach(id => {
         document.getElementById(id).addEventListener('input', updateLogoEffects);
     });
-
     document.getElementById('logo-border-toggle').addEventListener('change', (e) => {
         document.getElementById('logo-border-controls').style.display = e.target.checked ? 'block' : 'none';
         updateLogoEffects();
@@ -849,14 +864,18 @@
     const gifWorkerBlob = new Blob([`importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');`], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(gifWorkerBlob);
 
+    // 저장 버튼 클릭 이벤트 (뷰포트 초기화 로직 추가됨)
     document.getElementById('save-btn').addEventListener('click', async () => {
-        canvas.setZoom(1); 
+        // 현재 줌과 이동 상태를 저장해둡니다.
+        const originalVpt = canvas.viewportTransform.slice();
+        
+        // 저장을 위해 뷰포트를 초기 상태(1:1 비율, 0,0 좌표)로 리셋합니다.
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
         canvas.discardActiveObject();
         resetAllOpacities();
 
         const now = new Date();
         const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-
         const resScale = parseFloat(document.getElementById('res-scale-input').value);
         const gifQuality = parseInt(document.getElementById('gif-quality-input').value);
 
@@ -864,16 +883,20 @@
         const originalTransform = wrapper.style.transform;
         const originalMargin = wrapper.style.marginTop;
         wrapper.style.transform = 'none'; wrapper.style.marginTop = '0';
+        
         const loading = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
         loading.style.display = 'flex';
 
         if (activeGifs.length === 0) {
             setTimeout(() => {
-                const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 * resScale });
+                const dataURL = canvas.toDataURL({ format: 'png', multiplier: resScale });
                 const link = document.createElement('a');
                 link.download = `텐카_결과물_${dateStr}.png`;
                 link.href = dataURL; link.click();
+                
+                // 저장 완료 후 원래 사용자가 보던 뷰로 복구합니다.
+                canvas.setViewportTransform(originalVpt);
                 wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
                 loading.style.display = 'none';
             }, 100);
@@ -888,32 +911,24 @@
         let mainGif = activeGifs[0];
         let calculatedMaxFrames = 0;
         let originalDelay = 100;
-
         activeGifs.forEach(g => {
             const len = g.superGif.get_length();
             if (len > calculatedMaxFrames) { calculatedMaxFrames = len; mainGif = g; }
         });
-
         try {
             const frames = mainGif.superGif.get_frames(); 
             if(frames && frames.length > 0 && frames[0].delay) originalDelay = frames[0].delay * 10;
         } catch(e) {}
-
         let finalDelay = originalDelay / speedMult;
-        if (userFps > 0) {
-            finalDelay = 1000 / userFps;
-        } else if (userFrameDelay > 0) {
-            finalDelay = userFrameDelay;
-        }
+        if (userFps > 0) finalDelay = 1000 / userFps;
+        else if (userFrameDelay > 0) finalDelay = userFrameDelay;
 
         const totalDuration = (calculatedMaxFrames * originalDelay) / speedMult;
         const maxFrames = Math.max(1, Math.round(totalDuration / finalDelay));
 
         const gif = new GIF({ 
-            workers: 4, 
-            quality: gifQuality, 
-            width: 1024 * resScale, 
-            height: 765 * resScale, 
+            workers: 4, quality: gifQuality, 
+            width: 1024 * resScale, height: 765 * resScale, 
             workerScript: workerUrl 
         });
         activeGifs.forEach(g => g.superGif.pause());
@@ -932,7 +947,6 @@
             await new Promise(r => setTimeout(r, 0));
         }
         
-        wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
         loadingText.innerText = "인코딩 중...";
         gif.on('finished', function(blob) {
             const link = document.createElement('a');
@@ -940,6 +954,10 @@
             link.download = `텐카_움짤_${dateStr}.gif`;
             link.click();
             activeGifs.forEach(g => g.superGif.play());
+            
+            // 저장 완료 후 원래 사용자가 보던 뷰로 복구합니다.
+            canvas.setViewportTransform(originalVpt);
+            wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
             loading.style.display = 'none';
         });
         gif.render();
