@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터 (UI/초기화 개선판)</title>
+    <title>텐카 템플릿 - 에디터 (UI 초기 상태 수정판)</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -224,9 +224,9 @@
     <div class="control-section">
         <div class="section-title" onclick="toggleSection(this)">
             <span>🕹️ 조작 대상</span>
-            <span class="toggle-arrow">▼</span>
+            <span class="toggle-arrow" style="transform: rotate(-90deg);">▼</span>
         </div>
-        <div class="section-content">
+        <div class="section-content collapsed">
             <div class="selector-box">
                 <label><input type="radio" name="target" value="none" checked> 선택 없음</label>
                 <label><input type="radio" name="target" value="img1"> 말풍선 사진</label>
@@ -247,9 +247,9 @@
     <div class="control-section">
         <div class="section-title" onclick="toggleSection(this)">
             <span>🔍 SteamGridDB 검색</span>
-            <span class="toggle-arrow">▼</span>
+            <span class="toggle-arrow" style="transform: rotate(-90deg);">▼</span>
         </div>
-        <div class="section-content">
+        <div class="section-content collapsed">
             <input type="text" id="sgdb-input" placeholder="게임명 입력" style="width: 100%; padding: 8px; margin-bottom: 5px; box-sizing: border-box;">
             <button class="upload-btn" id="sgdb-search-btn" style="background:#495057">검색하기</button>
         </div>
@@ -258,9 +258,9 @@
     <div class="control-section">
         <div class="section-title" onclick="toggleSection(this)">
             <span>📊 움짤 정보 (측정됨)</span>
-            <span class="toggle-arrow">▼</span>
+            <span class="toggle-arrow" style="transform: rotate(-90deg);">▼</span>
         </div>
-        <div class="section-content">
+        <div class="section-content collapsed">
             <div id="detected-fps-info" style="font-size: 13px; color: #495057; line-height: 1.6;">
                 측정된 FPS: -
             </div>
@@ -278,9 +278,9 @@
     <div class="control-section">
         <div class="section-title" onclick="toggleSection(this)">
             <span>⚙️ 환경 설정</span>
-            <span class="toggle-arrow">▼</span>
+            <span class="toggle-arrow" style="transform: rotate(-90deg);">▼</span>
         </div>
-        <div class="section-content">
+        <div class="section-content collapsed">
             <label style="cursor:pointer; font-size: 14px; font-weight: bold; color: #007bff;">
                 <input type="checkbox" id="mobile-mode-toggle"> 모바일 최적화 UI 모드
             </label>
@@ -290,9 +290,9 @@
     <div class="control-section">
         <div class="section-title" onclick="toggleSection(this)">
             <span>🔤 폰트 설정</span>
-            <span class="toggle-arrow">▼</span>
+            <span class="toggle-arrow" style="transform: rotate(-90deg);">▼</span>
         </div>
-        <div class="section-content">
+        <div class="section-content collapsed">
             <button class="font-btn" onclick="document.getElementById('font-input').click();">폰트 변경</button>
             <input type="file" id="font-input" accept=".ttf, .otf, .woff, .woff2" style="display:none" onclick="this.value=null">
             
@@ -319,9 +319,9 @@
     <div class="control-section">
         <div class="section-title" onclick="toggleSection(this)">
             <span>✨ 효과 설정</span>
-            <span class="toggle-arrow">▼</span>
+            <span class="toggle-arrow" style="transform: rotate(-90deg);">▼</span>
         </div>
-        <div class="section-content">
+        <div class="section-content collapsed">
             <div style="display: flex; align-items: center; margin-bottom: 8px;">
                 <label style="cursor:pointer; font-size: 14px; display: flex; align-items: center;">
                     <input type="checkbox" id="logo-shadow-toggle" style="margin-right: 5px;"> 로고 그림자 설정
@@ -356,10 +356,10 @@
 
     <div class="control-section">
         <div class="section-title" onclick="toggleSection(this)">
-            <span>💾 저장 및 최적화</span>
-            <span class="toggle-arrow">▼</span>
+            <span>💾 저장 옵션</span>
+            <span class="toggle-arrow" style="transform: rotate(-90deg);">▼</span>
         </div>
-        <div class="section-content">
+        <div class="section-content collapsed">
             <div class="slider-item">
                 <div class="label-with-reset">배속 <button class="reset-mini-btn" onclick="resetPlainInput('gif-speed-input', 1.0)">↺</button></div>
                 <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1">
@@ -457,7 +457,6 @@
     }
 
     function resetShadow() {
-        // 체크박스 상태는 유지하고 슬라이더만 초기화
         document.getElementById('logo-shadow-blur').value = 10;
         document.getElementById('logo-shadow-offsetx').value = 5;
         document.getElementById('logo-shadow-offsety').value = 5;
@@ -466,7 +465,6 @@
     }
 
     function resetBorder() {
-        // 체크박스 상태는 유지하고 슬라이더만 초기화
         document.getElementById('logo-border-width').value = 2.5;
         document.getElementById('logo-border-num').value = 2.5;
         document.getElementById('logo-border-color').value = "#000000";
@@ -1008,7 +1006,7 @@
 
     document.getElementById('sgdb-search-btn').addEventListener('click', function() {
         const term = document.getElementById('sgdb-input').value.trim();
-        if (term) window.open(`https://www.steamgriddb.com/search/grids?term=${encodeURIComponent(term)}`, '_blank');
+        if (term) window.open(`https://www.steamgriddb.com/search/grids?term=${encodeURIComponent(term)}`, —_blank');
     });
 
     document.getElementById('img-input-1').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img1'));
