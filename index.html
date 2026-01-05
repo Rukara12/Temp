@@ -422,7 +422,7 @@
         img3: { left: 635, top: 415, width: 380, height: 340 }
     };
 
-    const activeGifs = [];
+    let activeGifs = []; // var -> let으로 변경
 
     document.fonts.ready.then(() => { initCanvas(); });
 
@@ -485,6 +485,8 @@
             reorderLayers();
             saveHistory();
         };
+        // [수정] 마우스 조작(이동, 변형) 종료 시 히스토리 저장
+        canvas.on('object:modified', saveHistory);
     }
 
     function createPlaceholders() {
@@ -621,6 +623,8 @@
         rubbableGif.load(function() {
             const gifCanvas = rubbableGif.get_canvas();
             const fabricImg = new fabric.Image(gifCanvas, { objectCaching: false });
+            // [수정] Undo/Redo 복구를 위해 원본 소스 저장
+            fabricImg._gifDataUrl = dataUrl; 
             setupLayerObj(fabricImg, layerKey);
             activeGifs.push({ fabricObj: fabricImg, superGif: rubbableGif, canvasEl: gifCanvas, container: container });
             rubbableGif.play();
@@ -795,7 +799,8 @@
     let stateHistory = [];
     let historyStep = -1;
     let isHistoryLocked = false;
-    const SAVE_PROPS = ['id', 'fixedHeight', 'selectable', 'evented', 'editable', '_layerKey', '_originalState', 'padding', '_originalTop'];
+    // [수정] GIF 복구를 위해 _gifDataUrl 속성 추가
+    const SAVE_PROPS = ['id', 'fixedHeight', 'selectable', 'evented', '_layerKey', '_originalState', 'padding', '_originalTop', '_gifDataUrl'];
 
     function saveHistory() {
         if (isHistoryLocked) return;
@@ -811,29 +816,82 @@
 
     function loadState(json) {
         isHistoryLocked = true;
+        
+        // [수정] 메모리 누수 방지 및 GIF 초기화
+        activeGifs.forEach(g => {
+            if (g.superGif) g.superGif.pause();
+            if (g.container && g.container.parentNode) {
+                g.container.parentNode.removeChild(g.container);
+            }
+        });
+        activeGifs = [];
+
         canvas.loadFromJSON(json, () => {
             const objs = canvas.getObjects();
             layers.img1 = layers.img2 = layers.img3 = null;
+
             objs.forEach(obj => {
-                obj.setCoords(); // 좌표 갱신 추가
+                // 레이어 참조 및 클리핑 복구
                 if (obj._layerKey) {
                     layers[obj._layerKey] = obj;
                     if(clipRects[obj._layerKey]) {
-                        obj.clipPath = new fabric.Rect({ left: clipRects[obj._layerKey].left, top: clipRects[obj._layerKey].top, width: clipRects[obj._layerKey].width, height: clipRects[obj._layerKey].height, absolutePositioned: true });
+                        obj.clipPath = new fabric.Rect({ 
+                            left: clipRects[obj._layerKey].left, 
+                            top: clipRects[obj._layerKey].top, 
+                            width: clipRects[obj._layerKey].width, 
+                            height: clipRects[obj._layerKey].height, 
+                            absolutePositioned: true 
+                        });
                     }
                 }
+
+                // 텍스트 이벤트 리스너 복구
                 if (obj.type === 'textbox') {
                     obj.on('changed', () => { alignVerticalCenter(obj); saveHistory(); });
                     obj.on('scaling', function() {
                         const scaleX = this.scaleX;
-                        this.set({ fontSize: this.fontSize * scaleX, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
+                        const newFontSize = this.fontSize * scaleX;
+                        this.set({ fontSize: newFontSize, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
                         syncFontControls(this);
                     });
                 }
+
+                // [수정] GIF 재생 상태 복구
+                if (obj._gifDataUrl) {
+                    const container = document.createElement('div');
+                    container.style.position = 'fixed'; container.style.left = '-9999px';
+                    container.style.top = '-9999px'; container.style.visibility = 'hidden';
+                    container.style.width = '0px'; container.style.height = '0px';
+                    container.style.overflow = 'hidden';
+                    document.body.appendChild(container);
+
+                    const imgTag = document.createElement('img');
+                    imgTag.src = obj._gifDataUrl;
+                    container.appendChild(imgTag);
+
+                    const rubbableGif = new SuperGif({ gif: imgTag, auto_play: false });
+                    rubbableGif.load(function() {
+                        const gifCanvas = rubbableGif.get_canvas();
+                        // 원본 위치/크기를 유지하며 소스 Element만 GIF 캔버스로 교체
+                        obj.setElement(gifCanvas);
+                        obj.set({ objectCaching: false, dirty: true });
+                        
+                        activeGifs.push({ fabricObj: obj, superGif: rubbableGif, canvasEl: gifCanvas, container: container });
+                        rubbableGif.play();
+                        updateGifInfo();
+                    });
+                }
             });
+
+            // [수정] 로고 효과(함수) 재적용
+            if (layers.img3) {
+                updateLogoEffects();
+            }
+
             reorderLayers();
             isHistoryLocked = false;
             canvas.requestRenderAll();
+            updateGifInfo();
         });
     }
 
