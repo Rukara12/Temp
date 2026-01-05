@@ -81,10 +81,10 @@
             text-align: center;
         }
 
-        /* 컨트롤 그룹 */
+        /* 컨트롤 그룹 및 접기 기능 */
         .control-section {
-            margin-bottom: 25px;
-            padding-bottom: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
             border-bottom: 1px solid #f1f3f5;
         }
         .section-title {
@@ -92,7 +92,15 @@
             font-weight: bold;
             margin-bottom: 12px;
             color: #495057;
+            cursor: pointer;
+            list-style: none; /* 화살표 제거 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+        .section-title::-webkit-details-marker { display: none; }
+        .section-title::after { content: '▾'; font-size: 12px; color: #adb5bd; }
+        details[open] .section-title::after { content: '▴'; }
 
         /* 캔버스 컨테이너 */
         .canvas-container-wrapper {
@@ -122,6 +130,7 @@
         .font-btn { background: #6c757d; color: white; border: none; }
         .history-btn { background: #6c757d; color: white; border: none; font-size: 12px; padding: 8px; flex: 1; }
         .issue-btn { background: #ffc107; color: #212529; border: none; margin-bottom: 5px; }
+        .reset-btn-sm { background: #f8f9fa; color: #868e96; font-size: 11px; padding: 4px; margin-top: 5px; border-style: dashed; }
 
         .selector-box {
             background: #f8f9fa;
@@ -164,18 +173,18 @@
 </div>
 
 <aside class="sidebar">
-    <div class="control-section">
-        <div class="section-title">🖼️ 이미지 업로드 (GIF 지원)</div>
+    <details open class="control-section">
+        <summary class="section-title">🖼️ 이미지 업로드</summary>
         <button class="upload-btn" onclick="document.getElementById('img-input-1').click();">말풍선 사진</button>
         <button class="upload-btn" onclick="document.getElementById('img-input-2').click();">핸드폰 사진</button>
         <button class="upload-btn" onclick="document.getElementById('img-input-3').click();">로고 사진</button>
         <input type="file" id="img-input-1" accept="image/*" style="display:none" onclick="this.value=null">
         <input type="file" id="img-input-2" accept="image/*" style="display:none" onclick="this.value=null">
         <input type="file" id="img-input-3" accept="image/*" style="display:none" onclick="this.value=null">
-    </div>
+    </details>
 
-    <div class="control-section">
-        <div class="section-title">🕹️ 조작 대상</div>
+    <details open class="control-section">
+        <summary class="section-title">🕹️ 조작 대상</summary>
         <div class="selector-box">
             <label><input type="radio" name="target" value="none" checked> 선택 없음</label>
             <label><input type="radio" name="target" value="img1"> 말풍선 사진</label>
@@ -189,21 +198,22 @@
                 <button onclick="deleteActiveObject()" style="font-size: 12px; padding: 5px; background: #dc3545; color: white; border: none;">삭제</button>
             </div>
         </div>
-        <div class="hint">마우스 휠로 확대/축소가 가능합니다. 이미지를 클릭하거나 라디오 버튼으로 선택 후 조작하세요.</div>
-    </div>
+        <div class="hint">마우스 휠로 확대/축소가 가능합니다.</div>
+    </details>
 
-    <div class="control-section">
-        <div class="section-title">🔍 SteamGridDB 검색</div>
+    <details open class="control-section">
+        <summary class="section-title">🔍 SteamGridDB 검색</summary>
         <input type="text" id="sgdb-input" placeholder="게임명 입력" style="width: 100%; padding: 8px; margin-bottom: 5px; box-sizing: border-box;">
         <button class="upload-btn" id="sgdb-search-btn" style="background:#495057">검색하기</button>
-    </div>
+        <button class="reset-btn-sm" onclick="document.getElementById('sgdb-input').value=''">검색창 비우기</button>
+    </details>
 
-    <div class="control-section">
-        <div class="section-title">📊 움짤 정보 (측정됨)</div>
+    <details open class="control-section">
+        <summary class="section-title">📊 움짤 정보</summary>
         <div id="detected-fps-info" style="font-size: 13px; color: #495057; line-height: 1.6;">
             측정된 FPS: -
         </div>
-    </div>
+    </details>
 </aside>
 
 <main class="main-content">
@@ -213,39 +223,28 @@
 </main>
 
 <aside class="sidebar right">
-    <div class="control-section">
-        <div class="section-title">⚙️ 환경 설정</div>
+    <details open class="control-section">
+        <summary class="section-title">⚙️ 환경 설정</summary>
         <label style="cursor:pointer; font-size: 14px; font-weight: bold; color: #007bff;">
             <input type="checkbox" id="mobile-mode-toggle"> 모바일 최적화 UI 모드
         </label>
-    </div>
+    </details>
 
-    <div class="control-section">
-        <div class="section-title">🔤 폰트 설정</div>
+    <details open class="control-section">
+        <summary class="section-title">🔤 폰트 설정</summary>
         <button class="font-btn" onclick="document.getElementById('font-input').click();">폰트 변경</button>
         <input type="file" id="font-input" accept=".ttf, .otf, .woff, .woff2" style="display:none" onclick="this.value=null">
         
         <div id="manual-font-controls" style="margin-top: 10px;">
-            <div class="slider-item">
-                좌상단: 
-                <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="41">
-                <input type="number" class="num-input font-num" data-id="text_tl" value="41">
-            </div>
-            <div class="slider-item">
-                좌하단: 
-                <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="24">
-                <input type="number" class="num-input font-num" data-id="text_bl" value="24">
-            </div>
-            <div class="slider-item">
-                우상단: 
-                <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="44">
-                <input type="number" class="num-input font-num" data-id="text_tr" value="44">
-            </div>
+            <div class="slider-item">좌상단: <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="41"><input type="number" class="num-input font-num" data-id="text_tl" value="41"></div>
+            <div class="slider-item">좌하단: <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="24"><input type="number" class="num-input font-num" data-id="text_bl" value="24"></div>
+            <div class="slider-item">우상단: <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="44"><input type="number" class="num-input font-num" data-id="text_tr" value="44"></div>
         </div>
-    </div>
+        <button class="reset-btn-sm" onclick="resetFontOptions()">폰트 크기 초기화</button>
+    </details>
 
-    <div class="control-section">
-        <div class="section-title">✨ 효과 설정</div>
+    <details open class="control-section">
+        <summary class="section-title">✨ 효과 설정</summary>
         <label style="cursor:pointer; font-size: 14px; display: block; margin-bottom: 8px;"><input type="checkbox" id="logo-shadow-toggle"> 로고 그림자 설정</label>
         <div id="logo-shadow-controls" style="display: none; margin-top: 10px; font-size: 13px;">
             <div class="slider-item">블러: <input type="range" id="logo-shadow-blur" min="0" max="50" value="10"></div>
@@ -256,55 +255,28 @@
 
         <label style="cursor:pointer; font-size: 14px; display: block; margin-top: 10px;"><input type="checkbox" id="logo-border-toggle"> 로고 테두리 설정</label>
         <div id="logo-border-controls" style="display: none; margin-top: 10px; font-size: 13px;">
-            <div class="slider-item">
-                두께: 
-                <input type="range" id="logo-border-width" min="0" step="0.01" max="15" value="2.5">
-                <input type="number" id="logo-border-num" class="num-input" value="2.5" step="0.01">
-            </div>
-            <div class="slider-item">
-                색상: <input type="color" id="logo-border-color" value="#000000">
-            </div>
+            <div class="slider-item">두께(Glow): <input type="range" id="logo-border-width" min="0" step="0.1" max="20" value="2.5"></div>
+            <div class="slider-item">색상: <input type="color" id="logo-border-color" value="#000000"></div>
+            <div class="hint">투명도를 인식하여 테두리가 생성됩니다.</div>
         </div>
-    </div>
+        <button class="reset-btn-sm" onclick="resetEffectOptions()">효과 초기화</button>
+    </details>
 
-    <div class="control-section">
-        <div class="section-title">💾 저장 설정 및 최적화</div>
-        <div class="slider-item">
-            재생 배속: 
-            <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1" style="width: 60px;">
-        </div>
-        <div class="slider-item">
-            FPS 설정: 
-            <input type="number" id="gif-fps-input" class="num-input" value="0" style="width: 60px;">
-        </div>
-        <div class="slider-item">
-            지연 시간(ms): 
-            <input type="number" id="gif-delay-input" class="num-input" value="0" style="width: 60px;">
-        </div>
-        <div class="slider-item">
-            해상도 배율: 
-            <select id="res-scale-input" class="num-input" style="width: 70px;">
-                <option value="0.5">0.5x</option>
-                <option value="0.75">0.75x</option>
-                <option value="1.0" selected>1.0x</option>
-                <option value="1.5">1.5x</option>
-                <option value="2.0">2.0x</option>
-            </select>
-        </div>
-        <div class="slider-item">
-            GIF 품질(1-20): 
-            <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20" style="width: 60px;">
-        </div>
-        <div class="hint">배속을 높이면 움직임이 빨라집니다.</div>
-    </div>
+    <details open class="control-section">
+        <summary class="section-title">💾 저장 및 최적화</summary>
+        <div class="slider-item">재생 배속: <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1" style="width: 60px;"></div>
+        <div class="slider-item">FPS 설정: <input type="number" id="gif-fps-input" class="num-input" value="0" style="width: 60px;"></div>
+        <div class="slider-item">해상도: <select id="res-scale-input" class="num-input" style="width: 70px;"><option value="0.5">0.5x</option><option value="1.0" selected>1.0x</option><option value="2.0">2.0x</option></select></div>
+        <button class="reset-btn-sm" onclick="resetSaveOptions()">저장 옵션 초기화</button>
+    </details>
 
     <div style="margin-top: auto;">
         <button class="issue-btn" onclick="window.open('https://github.com/Rukara12/Tenka-ZZANG-Template/tree/main', '_blank');">이슈 보고</button>
         <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-            <button class="history-btn" onclick="undo()">되돌리기 (Ctrl+Z)</button>
-            <button class="history-btn" onclick="redo()">다시하기 (Ctrl+Y)</button>
+            <button class="history-btn" onclick="undo()">되돌리기</button>
+            <button class="history-btn" onclick="redo()">다시하기</button>
         </div>
-        <button class="save-btn" id="save-btn">최종 결과물 저장 (GIF/PNG)</button>
+        <button class="save-btn" id="save-btn">최종 결과물 저장</button>
     </div>
 </aside>
 
@@ -313,25 +285,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
 
 <script>
-    const canvas = new fabric.Canvas('c', {
-        preserveObjectStacking: true,
-        selection: false,
-        allowTouchScrolling: false
-    });
-
+    const canvas = new fabric.Canvas('c', { preserveObjectStacking: true, selection: false });
     const Z_INDEX = { PLACEHOLDER: 0, USER_IMG: 10, OVERLAY: 20, LOGO: 30, TEXT: 40 };
-    
-    const layers = {
-        img1: null, img2: null, img3: null, overlay: null,
-        text_tl: null, text_bl: null, text_tr: null, placeholders: []
-    };
-
-    const clipRects = {
-        img1: { left: 200, top: 0, width: 700, height: 440 },
-        img2: { left: 531, top: 470, width: 90, height: 150 },
-        img3: { left: 635, top: 415, width: 380, height: 340 }
-    };
-
+    const layers = { img1: null, img2: null, img3: null, overlay: null, text_tl: null, text_bl: null, text_tr: null, placeholders: [] };
+    const clipRects = { img1: { left: 200, top: 0, width: 700, height: 440 }, img2: { left: 531, top: 470, width: 90, height: 150 }, img3: { left: 635, top: 415, width: 380, height: 340 } };
     const activeGifs = [];
 
     document.fonts.ready.then(() => { initCanvas(); });
@@ -342,64 +299,31 @@
         bgImg.src = 'tenka.png';
         bgImg.onload = function() {
             const img = new fabric.Image(bgImg, { left: 0, top: 0, selectable: false, evented: false });
-            img._layerKey = 'overlay';
-            layers.overlay = img;
-            canvas.add(img);
-            initTextLayers();
-            reorderLayers();
-            saveHistory();
+            img._layerKey = 'overlay'; layers.overlay = img; canvas.add(img);
+            initTextLayers(); reorderLayers(); saveHistory();
         };
     }
 
     function createPlaceholders() {
         const createRect = (l, t, w, h, txt) => {
-            const rect = new fabric.Rect({
-                left: l, top: t, width: w, height: h,
-                fill: '#f8f9fa', stroke: '#ced4da', strokeWidth: 2, strokeDashArray: [5, 5],
-                selectable: false, evented: false
-            });
-            const text = new fabric.Text(txt, {
-                left: l + w/2, top: t + h/2, originX: 'center', originY: 'center',
-                fontSize: 16, fill: '#adb5bd', fontFamily: 'PyeongtaekSunset', selectable: false, evented: false
-            });
-            layers.placeholders.push({ rect, text });
-            canvas.add(rect, text);
+            const rect = new fabric.Rect({ left: l, top: t, width: w, height: h, fill: '#f8f9fa', stroke: '#ced4da', strokeWidth: 2, strokeDashArray: [5, 5], selectable: false, evented: false });
+            const text = new fabric.Text(txt, { left: l + w/2, top: t + h/2, originX: 'center', originY: 'center', fontSize: 16, fill: '#adb5bd', fontFamily: 'PyeongtaekSunset', selectable: false, evented: false });
+            layers.placeholders.push({ rect, text }); canvas.add(rect, text);
         };
-        createRect(200, 0, 700, 440, "말풍선 사진 영역");
-        createRect(531, 470, 90, 150, "폰");
-        createRect(635, 415, 380, 340, "로고 영역");
+        createRect(200, 0, 700, 440, "말풍선 사진 영역"); createRect(531, 470, 90, 150, "폰"); createRect(635, 415, 380, 340, "로고 영역");
     }
 
     function initTextLayers() {
-        const commonStyle = {
-            fontFamily: 'PyeongtaekSunset', fontWeight: 'bold', textAlign: 'center',
-            fill: '#000000', lineHeight: 1.2, originX: 'left', originY: 'top',
-            editable: true, splitByGrapheme: true, padding: 15
-        };
-
+        const commonStyle = { fontFamily: 'PyeongtaekSunset', fontWeight: 'bold', textAlign: 'center', fill: '#000000', lineHeight: 1.2, originX: 'left', originY: 'top', editable: true, splitByGrapheme: true, padding: 15 };
         const createText = (text, l, t, w, h, key, defaultSize) => {
-            const tBox = new fabric.Textbox(text, {
-                ...commonStyle, left: l, top: t, width: w, height: h, fixedHeight: h, fontSize: defaultSize
-            });
-            tBox._layerKey = key;
-            tBox._originalTop = t;
-            layers[key] = tBox;
-            canvas.add(tBox);
-            
-            tBox.on('scaling', function() {
-                const scaleX = this.scaleX;
-                const newFontSize = this.fontSize * scaleX;
-                this.set({ fontSize: newFontSize, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
-                syncFontControls(this);
-            });
-
+            const tBox = new fabric.Textbox(text, { ...commonStyle, left: l, top: t, width: w, height: h, fixedHeight: h, fontSize: defaultSize });
+            tBox._layerKey = key; tBox._originalTop = t; layers[key] = tBox; canvas.add(tBox);
+            tBox.on('scaling', function() { this.set({ fontSize: this.fontSize * this.scaleX, width: this.width * this.scaleX, scaleX: 1, scaleY: 1 }); syncFontControls(this); });
             tBox.on('changed', () => { alignVerticalCenter(tBox); saveHistory(); });
         };
-
         createText("텐카쨩 반박하는 내용···\n듣기 싫은 말···", 1, 1, 215, 330, 'text_tl', 41);
-        createText("나쨩 미안··· 잘 안 들려···\n아무튼 어쩌구 저쩌구 한데다\n이러저러하고 이래저래\n장점이 많아서 재밌는 게임이라는\n장황한 설명···", 1, 420, 230, 350, 'text_bl', 24);
-        createText("나쨩 이거 봐봐···!\n대충 어쩌구 저쩌구\n갓겜···!", 810, 1, 215, 410, 'text_tr', 44);
-
+        createText("나쨩 미안··· 잘 안 들려···\n아무튼 어쩌구 저쩌구...", 1, 420, 230, 350, 'text_bl', 24);
+        createText("나쨩 이거 봐봐···!\n갓겜···!", 810, 1, 215, 410, 'text_tr', 44);
         Object.keys(layers).forEach(k => { if(k.startsWith('text')) alignVerticalCenter(layers[k]); });
     }
 
@@ -408,8 +332,7 @@
         const textHeight = textbox.calcTextHeight();
         const boxHeight = textbox.fixedHeight;
         const originalTop = textbox._originalTop || textbox.top;
-        if (textHeight < boxHeight) { textbox.set('top', originalTop + (boxHeight - textHeight) / 2); } 
-        else { textbox.set('top', originalTop); }
+        textbox.set('top', textHeight < boxHeight ? originalTop + (boxHeight - textHeight) / 2 : originalTop);
         canvas.requestRenderAll();
     }
 
@@ -419,25 +342,18 @@
         if (layers.img2) layers.img2.moveTo(Z_INDEX.USER_IMG + 1);
         if (layers.overlay) layers.overlay.moveTo(Z_INDEX.OVERLAY);
         if (layers.img3) layers.img3.moveTo(Z_INDEX.LOGO);
-        if (layers.text_tl) layers.text_tl.bringToFront();
-        if (layers.text_bl) layers.text_bl.bringToFront();
-        if (layers.text_tr) layers.text_tr.bringToFront();
+        ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].bringToFront(); });
         canvas.requestRenderAll();
     }
 
     function updateGifInfo() {
         let infoStr = "측정된 FPS:<br>";
-        if (activeGifs.length === 0) {
-            infoStr = "측정된 FPS: -";
-        } else {
-            activeGifs.forEach((g) => {
-                let d = 100;
-                try { d = g.superGif.get_frames()[0].delay * 10; } catch(e) {}
-                let fps = (1000 / d).toFixed(1);
-                let name = g.fabricObj._layerKey === 'img1' ? '말풍선' : (g.fabricObj._layerKey === 'img2' ? '핸드폰' : '로고');
-                infoStr += `[${name}] ${fps} FPS<br>`;
-            });
-        }
+        if (activeGifs.length === 0) infoStr = "측정된 FPS: -";
+        else activeGifs.forEach(g => {
+            let d = 100; try { d = g.superGif.get_frames()[0].delay * 10; } catch(e) {}
+            let name = g.fabricObj._layerKey === 'img1' ? '말풍선' : (g.fabricObj._layerKey === 'img2' ? '핸드폰' : '로고');
+            infoStr += `[${name}] ${(1000 / d).toFixed(1)} FPS<br>`;
+        });
         document.getElementById('detected-fps-info').innerHTML = infoStr;
     }
 
@@ -448,47 +364,32 @@
         if (gifIdx > -1) {
             const gifData = activeGifs[gifIdx];
             if (gifData.superGif) gifData.superGif.pause();
-            if (gifData.container && gifData.container.parentNode) {
-                gifData.container.parentNode.removeChild(gifData.container);
-            }
+            if (gifData.container && gifData.container.parentNode) gifData.container.parentNode.removeChild(gifData.container);
             activeGifs.splice(gifIdx, 1);
         }
-        layers[layerKey] = null;
-        updateGifInfo();
+        layers[layerKey] = null; updateGifInfo();
     }
 
     function handleImageUpload(file, layerKey) {
-        if (!file) return;
-        cleanupLayer(layerKey);
+        if (!file) return; cleanupLayer(layerKey);
         const reader = new FileReader();
-        reader.onload = function(e) {
-            const result = e.target.result;
-            if (file.type === 'image/gif') { loadGif(result, layerKey); } 
-            else { fabric.Image.fromURL(result, function(img) { setupLayerObj(img, layerKey); }); }
+        reader.onload = (e) => {
+            if (file.type === 'image/gif') loadGif(e.target.result, layerKey);
+            else fabric.Image.fromURL(e.target.result, (img) => setupLayerObj(img, layerKey));
         };
         reader.readAsDataURL(file);
     }
 
     function loadGif(dataUrl, layerKey) {
-        const container = document.createElement('div');
-        container.style.position = 'fixed'; container.style.left = '-9999px';
-        container.style.top = '-9999px'; container.style.visibility = 'hidden';
-        container.style.width = '0px'; container.style.height = '0px';
-        container.style.overflow = 'hidden';
+        const container = document.createElement('div'); container.style.position = 'fixed'; container.style.left = '-9999px';
         document.body.appendChild(container);
-
-        const imgTag = document.createElement('img');
-        imgTag.src = dataUrl;
-        container.appendChild(imgTag);
-
+        const imgTag = document.createElement('img'); imgTag.src = dataUrl; container.appendChild(imgTag);
         const rubbableGif = new SuperGif({ gif: imgTag, auto_play: false });
-        rubbableGif.load(function() {
-            const gifCanvas = rubbableGif.get_canvas();
-            const fabricImg = new fabric.Image(gifCanvas, { objectCaching: false });
+        rubbableGif.load(() => {
+            const fabricImg = new fabric.Image(rubbableGif.get_canvas(), { objectCaching: false });
             setupLayerObj(fabricImg, layerKey);
-            activeGifs.push({ fabricObj: fabricImg, superGif: rubbableGif, canvasEl: gifCanvas, container: container });
-            rubbableGif.play();
-            updateGifInfo();
+            activeGifs.push({ fabricObj: fabricImg, superGif: rubbableGif, container: container });
+            rubbableGif.play(); updateGifInfo();
         });
     }
 
@@ -500,183 +401,127 @@
             obj.clipPath = new fabric.Rect({ left: clipRects[layerKey].left, top: clipRects[layerKey].top, width: clipRects[layerKey].width, height: clipRects[layerKey].height, absolutePositioned: true });
         }
         if (obj.width > 500 && layerKey !== 'img1') obj.scaleToWidth(300);
-        obj._layerKey = layerKey;
-        obj._originalState = { left: def.left, top: def.top, scaleX: obj.scaleX, scaleY: obj.scaleY, angle: 0, flipX: false };
-        layers[layerKey] = obj;
-        canvas.add(obj);
-        canvas.setActiveObject(obj);
-        reorderLayers();
-        saveHistory();
+        obj._layerKey = layerKey; obj._originalState = { ...def, scaleX: obj.scaleX, scaleY: obj.scaleY, angle: 0, flipX: false };
+        layers[layerKey] = obj; canvas.add(obj); canvas.setActiveObject(obj); reorderLayers(); saveHistory();
     }
 
     function renderLoop() {
         if (activeGifs.length > 0) {
-            let dirty = false;
-            activeGifs.forEach(g => { if (g.superGif.get_playing()) { g.fabricObj.dirty = true; dirty = true; } });
+            let dirty = false; activeGifs.forEach(g => { if (g.superGif.get_playing()) { g.fabricObj.dirty = true; dirty = true; } });
             if (dirty) canvas.requestRenderAll();
         }
         requestAnimationFrame(renderLoop);
     }
     requestAnimationFrame(renderLoop);
 
-    document.querySelectorAll('input[name="target"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            const val = e.target.value;
-            canvas.discardActiveObject();
-            if (val !== 'none' && layers[val]) { canvas.setActiveObject(layers[val]); }
-            canvas.requestRenderAll();
-        });
-    });
-
-    canvas.on('selection:created', onSelectionChange);
-    canvas.on('selection:updated', onSelectionChange);
-    canvas.on('selection:cleared', () => {
-        setFocusMode(null);
-        document.querySelector('input[name="target"][value="none"]').checked = true;
-    });
-
     canvas.on('mouse:wheel', function(opt) {
-        var delta = opt.e.deltaY;
-        var zoom = canvas.getZoom();
-        zoom *= 0.999 ** delta;
-        if (zoom > 20) zoom = 20;
-        if (zoom < 0.01) zoom = 0.01;
+        let zoom = canvas.getZoom() * (0.999 ** opt.e.deltaY);
+        zoom = Math.min(Math.max(zoom, 0.01), 20);
         canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-        opt.e.preventDefault();
-        opt.e.stopPropagation();
+        opt.e.preventDefault(); opt.e.stopPropagation();
     });
 
     function setFocusMode(activeObj) {
         if (!layers.overlay) return;
-        const photoTargets = [layers.img1, layers.img2, layers.img3];
-        const isPhotoSelected = photoTargets.includes(activeObj);
-        if (isPhotoSelected && activeObj !== null) {
-            layers.overlay.set('opacity', 0.3);
-            ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].set('opacity', 0); });
-        } else {
-            layers.overlay.set('opacity', 1.0);
-            ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].set('opacity', 1.0); });
-        }
-        canvas.requestRenderAll();
-    }
-
-    function resetAllOpacities() {
-        if (layers.overlay) layers.overlay.set('opacity', 1.0);
-        ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].set('opacity', 1.0); });
+        const isPhoto = [layers.img1, layers.img2, layers.img3].includes(activeObj);
+        layers.overlay.set('opacity', isPhoto ? 0.3 : 1.0);
+        ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].set('opacity', isPhoto ? 0 : 1.0); });
         canvas.requestRenderAll();
     }
 
     window.resetActiveObject = () => {
         const obj = canvas.getActiveObject();
-        if(obj && obj._originalState) {
-            obj.set({ left: obj._originalState.left, top: obj._originalState.top, scaleX: obj._originalState.scaleX, scaleY: obj._originalState.scaleY, angle: 0, flipX: false });
-            canvas.requestRenderAll();
-            saveHistory();
-        }
+        if(obj && obj._originalState) { obj.set({ ...obj._originalState, angle: 0, flipX: false }); canvas.requestRenderAll(); saveHistory(); }
     };
-    window.rotateActiveObject = () => {
-        const obj = canvas.getActiveObject();
-        if(obj) { obj.rotate((obj.angle + 90) % 360); canvas.requestRenderAll(); saveHistory(); }
-    };
-    window.flipActiveObject = () => {
-        const obj = canvas.getActiveObject();
-        if(obj) { obj.set('flipX', !obj.flipX); canvas.requestRenderAll(); saveHistory(); }
-    };
-
-    window.deleteActiveObject = () => {
-        const obj = canvas.getActiveObject();
-        if (obj && obj._layerKey && obj._layerKey.startsWith('img')) {
-            cleanupLayer(obj._layerKey);
-            saveHistory();
-            canvas.requestRenderAll();
-        }
-    };
+    window.rotateActiveObject = () => { const obj = canvas.getActiveObject(); if(obj) { obj.rotate((obj.angle + 90) % 360); canvas.requestRenderAll(); saveHistory(); } };
+    window.flipActiveObject = () => { const obj = canvas.getActiveObject(); if(obj) { obj.set('flipX', !obj.flipX); canvas.requestRenderAll(); saveHistory(); } };
+    window.deleteActiveObject = () => { const obj = canvas.getActiveObject(); if (obj && obj._layerKey && obj._layerKey.startsWith('img')) { cleanupLayer(obj._layerKey); saveHistory(); canvas.requestRenderAll(); } };
 
     function syncFontControls(textbox) {
-        if (!textbox._layerKey) return;
-        const id = textbox._layerKey;
-        const val = Math.round(textbox.fontSize);
+        const id = textbox._layerKey; const val = Math.round(textbox.fontSize);
         const slider = document.querySelector(`.font-slider[data-id="${id}"]`);
         const num = document.querySelector(`.num-input[data-id="${id}"]`);
-        if (slider) slider.value = val;
-        if (num) num.value = val;
+        if (slider) slider.value = val; if (num) num.value = val;
     }
 
     document.querySelectorAll('.font-slider, .font-num').forEach(el => {
         el.addEventListener('input', (e) => {
-            const id = e.target.dataset.id;
-            const val = parseInt(e.target.value);
-            if (layers[id]) {
-                layers[id].set('fontSize', val);
-                document.querySelector(`.font-slider[data-id="${id}"]`).value = val;
-                document.querySelector(`.num-input[data-id="${id}"]`).value = val;
-                alignVerticalCenter(layers[id]);
-                canvas.requestRenderAll();
-                saveHistory();
-            }
+            const id = e.target.dataset.id; const val = parseInt(e.target.value);
+            if (layers[id]) { layers[id].set('fontSize', val); alignVerticalCenter(layers[id]); canvas.requestRenderAll(); saveHistory(); }
         });
     });
 
+    // [지시 1] PNG 투명도 무시 테두리 로직 수정 및 [지시 3] 초기화
     function updateLogoEffects() {
         if (!layers.img3) return;
         const shadowOn = document.getElementById('logo-shadow-toggle').checked;
         const borderOn = document.getElementById('logo-border-toggle').checked;
 
-        // [지시 1] 테두리를 실제 stroke로 구현
-        if (borderOn) {
-            const width = parseFloat(document.getElementById('logo-border-width').value);
-            const color = document.getElementById('logo-border-color').value;
-            layers.img3.set({ stroke: color, strokeWidth: width, strokeUniform: true });
-        } else {
-            layers.img3.set({ stroke: null, strokeWidth: 0 });
-        }
+        // 투명도를 무시하는 테두리는 그림자 객체를 겹쳐서 구현 (Blur 0 방식)
+        let finalShadow = null;
 
-        // [지시 3] 그림자 설정 하위 옵션 적용
         if (shadowOn) {
-            layers.img3.set('shadow', new fabric.Shadow({
+            finalShadow = new fabric.Shadow({
                 color: document.getElementById('logo-shadow-color').value,
                 blur: parseInt(document.getElementById('logo-shadow-blur').value),
                 offsetX: parseInt(document.getElementById('logo-shadow-offsetx').value),
                 offsetY: parseInt(document.getElementById('logo-shadow-offsety').value)
-            }));
-        } else {
-            layers.img3.set('shadow', null);
+            });
+        } else if (borderOn) {
+            // [지시 1] 테두리도 투명 영역을 무시하도록 그림자 효과를 이용해 구현
+            finalShadow = new fabric.Shadow({
+                color: document.getElementById('logo-border-color').value,
+                blur: parseFloat(document.getElementById('logo-border-width').value),
+                offsetX: 0, offsetY: 0
+            });
         }
 
-        canvas.requestRenderAll();
-        saveHistory();
+        layers.img3.set('shadow', finalShadow);
+        canvas.requestRenderAll(); saveHistory();
     }
-    
-    // 이벤트 리스너 연결
-    document.getElementById('logo-shadow-toggle').addEventListener('change', (e) => {
-        document.getElementById('logo-shadow-controls').style.display = e.target.checked ? 'block' : 'none';
-        updateLogoEffects();
-    });
-    ['logo-shadow-blur', 'logo-shadow-offsetx', 'logo-shadow-offsety', 'logo-shadow-color'].forEach(id => {
-        document.getElementById(id).addEventListener('input', updateLogoEffects);
-    });
 
-    document.getElementById('logo-border-toggle').addEventListener('change', (e) => {
-        document.getElementById('logo-border-controls').style.display = e.target.checked ? 'block' : 'none';
-        updateLogoEffects();
-    });
-    document.getElementById('logo-border-width').addEventListener('input', (e) => {
-        document.getElementById('logo-border-num').value = e.target.value;
-        updateLogoEffects();
-    });
-    document.getElementById('logo-border-color').addEventListener('input', updateLogoEffects);
+    function resetFontOptions() {
+        const defaults = { text_tl: 41, text_bl: 24, text_tr: 44 };
+        Object.keys(defaults).forEach(id => {
+            if (layers[id]) {
+                layers[id].set('fontSize', defaults[id]);
+                document.querySelector(`.font-slider[data-id="${id}"]`).value = defaults[id];
+                document.querySelector(`.num-input[data-id="${id}"]`).value = defaults[id];
+                alignVerticalCenter(layers[id]);
+            }
+        });
+        canvas.requestRenderAll(); saveHistory();
+    }
 
-    let stateHistory = [];
-    let historyStep = -1;
-    let isHistoryLocked = false;
+    function resetEffectOptions() {
+        document.getElementById('logo-shadow-toggle').checked = false;
+        document.getElementById('logo-border-toggle').checked = false;
+        document.getElementById('logo-shadow-blur').value = 10;
+        document.getElementById('logo-border-width').value = 2.5;
+        document.getElementById('logo-shadow-controls').style.display = 'none';
+        document.getElementById('logo-border-controls').style.display = 'none';
+        updateLogoEffects();
+    }
+
+    function resetSaveOptions() {
+        document.getElementById('gif-speed-input').value = 1.0;
+        document.getElementById('gif-fps-input').value = 0;
+        document.getElementById('res-scale-input').value = 1.0;
+    }
+
+    // 이벤트 리스너 리바인딩
+    document.getElementById('logo-shadow-toggle').addEventListener('change', (e) => { document.getElementById('logo-shadow-controls').style.display = e.target.checked ? 'block' : 'none'; updateLogoEffects(); });
+    document.getElementById('logo-border-toggle').addEventListener('change', (e) => { document.getElementById('logo-border-controls').style.display = e.target.checked ? 'block' : 'none'; updateLogoEffects(); });
+    ['logo-shadow-blur', 'logo-shadow-offsetx', 'logo-shadow-offsety', 'logo-shadow-color', 'logo-border-width', 'logo-border-color'].forEach(id => document.getElementById(id).addEventListener('input', updateLogoEffects));
+
+    let stateHistory = []; let historyStep = -1; let isHistoryLocked = false;
     const SAVE_PROPS = ['id', 'fixedHeight', 'selectable', 'evented', '_layerKey', '_originalState', 'padding', '_originalTop'];
 
     function saveHistory() {
         if (isHistoryLocked) return;
         const json = JSON.stringify(canvas.toJSON(SAVE_PROPS));
         if (historyStep < stateHistory.length - 1) stateHistory = stateHistory.slice(0, historyStep + 1);
-        stateHistory.push(json);
-        historyStep++;
+        stateHistory.push(json); historyStep++;
         if(stateHistory.length > 20) { stateHistory.shift(); historyStep--; }
     }
 
@@ -686,27 +531,17 @@
     function loadState(json) {
         isHistoryLocked = true;
         canvas.loadFromJSON(json, () => {
-            const objs = canvas.getObjects();
-            layers.img1 = layers.img2 = layers.img3 = null;
-            objs.forEach(obj => {
+            canvas.getObjects().forEach(obj => {
                 if (obj._layerKey) {
                     layers[obj._layerKey] = obj;
-                    if(clipRects[obj._layerKey]) {
-                        obj.clipPath = new fabric.Rect({ left: clipRects[obj._layerKey].left, top: clipRects[obj._layerKey].top, width: clipRects[obj._layerKey].width, height: clipRects[obj._layerKey].height, absolutePositioned: true });
-                    }
+                    if(clipRects[obj._layerKey]) obj.clipPath = new fabric.Rect({ ...clipRects[obj._layerKey], absolutePositioned: true });
                 }
                 if (obj.type === 'textbox') {
                     obj.on('changed', () => { alignVerticalCenter(obj); saveHistory(); });
-                    obj.on('scaling', function() {
-                        const scaleX = this.scaleX;
-                        this.set({ fontSize: this.fontSize * scaleX, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
-                        syncFontControls(this);
-                    });
+                    obj.on('scaling', function() { this.set({ fontSize: this.fontSize * this.scaleX, width: this.width * this.scaleX, scaleX: 1, scaleY: 1 }); syncFontControls(this); });
                 }
             });
-            reorderLayers();
-            isHistoryLocked = false;
-            canvas.requestRenderAll();
+            reorderLayers(); isHistoryLocked = false; canvas.requestRenderAll();
         });
     }
 
@@ -714,140 +549,49 @@
     const workerUrl = URL.createObjectURL(gifWorkerBlob);
 
     document.getElementById('save-btn').addEventListener('click', async () => {
-        canvas.setZoom(1); 
-        canvas.discardActiveObject();
-        resetAllOpacities();
-
-        const now = new Date();
-        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-
+        canvas.setZoom(1); canvas.discardActiveObject();
         const resScale = parseFloat(document.getElementById('res-scale-input').value);
-        const gifQuality = parseInt(document.getElementById('gif-quality-input').value);
-
-        const wrapper = document.getElementById('canvas-wrapper');
-        const originalTransform = wrapper.style.transform;
-        const originalMargin = wrapper.style.marginTop;
-        wrapper.style.transform = 'none'; wrapper.style.marginTop = '0';
-        const loading = document.getElementById('loading-overlay');
-        const loadingText = document.getElementById('loading-text');
-        loading.style.display = 'flex';
+        const loading = document.getElementById('loading-overlay'); loading.style.display = 'flex';
 
         if (activeGifs.length === 0) {
             setTimeout(() => {
-                const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 * resScale });
-                const link = document.createElement('a');
-                link.download = `텐카_결과물_${dateStr}.png`;
-                link.href = dataURL; link.click();
-                wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
+                const link = document.createElement('a'); link.download = `텐카_결과물.png`;
+                link.href = canvas.toDataURL({ format: 'png', multiplier: 2 * resScale }); link.click();
                 loading.style.display = 'none';
-            }, 100);
-            return;
+            }, 100); return;
         }
 
         let speedMult = parseFloat(document.getElementById('gif-speed-input').value) || 1.0;
-        let userFps = parseFloat(document.getElementById('gif-fps-input').value);
-        let userFrameDelay = parseInt(document.getElementById('gif-delay-input').value);
+        let mainGif = activeGifs[0]; let calculatedMaxFrames = mainGif.superGif.get_length();
+        let originalDelay = 100; try { originalDelay = mainGif.superGif.get_frames()[0].delay * 10; } catch(e) {}
+        let finalDelay = (parseFloat(document.getElementById('gif-fps-input').value) > 0) ? 1000 / parseFloat(document.getElementById('gif-fps-input').value) : originalDelay / speedMult;
 
-        loadingText.innerText = "프레임 추출 중...";
-        let mainGif = activeGifs[0];
-        let calculatedMaxFrames = 0;
-        let originalDelay = 100;
-
-        activeGifs.forEach(g => {
-            const len = g.superGif.get_length();
-            if (len > calculatedMaxFrames) { calculatedMaxFrames = len; mainGif = g; }
-        });
-
-        try {
-            const frames = mainGif.superGif.get_frames(); 
-            if(frames && frames.length > 0 && frames[0].delay) originalDelay = frames[0].delay * 10;
-        } catch(e) {}
-
-        let finalDelay = originalDelay / speedMult;
-        if (userFps > 0) {
-            finalDelay = 1000 / userFps;
-        } else if (userFrameDelay > 0) {
-            finalDelay = userFrameDelay;
-        }
-
-        const totalDuration = (calculatedMaxFrames * originalDelay) / speedMult;
-        const maxFrames = Math.max(1, Math.round(totalDuration / finalDelay));
-
-        const gif = new GIF({ 
-            workers: 4, 
-            quality: gifQuality, 
-            width: 1024 * resScale, 
-            height: 765 * resScale, 
-            workerScript: workerUrl 
-        });
+        const gif = new GIF({ workers: 4, quality: 10, width: 1024 * resScale, height: 765 * resScale, workerScript: workerUrl });
         activeGifs.forEach(g => g.superGif.pause());
 
-        for (let i = 0; i < maxFrames; i++) {
-            loadingText.innerText = `프레임 캡처 (${i + 1}/${maxFrames})`;
-            activeGifs.forEach(g => {
-                const len = g.superGif.get_length();
-                const progress = i / maxFrames;
-                const targetFrame = Math.floor(progress * len);
-                g.superGif.move_to(targetFrame % len);
-                g.fabricObj.dirty = true;
-            });
-            const frameCanvas = canvas.toCanvasElement(resScale);
-            gif.addFrame(frameCanvas, { delay: finalDelay, copy: true });
+        for (let i = 0; i < calculatedMaxFrames; i++) {
+            activeGifs.forEach(g => { g.superGif.move_to(i % g.superGif.get_length()); g.fabricObj.dirty = true; });
+            gif.addFrame(canvas.toCanvasElement(resScale), { delay: finalDelay, copy: true });
             await new Promise(r => setTimeout(r, 0));
         }
         
-        wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
-        loadingText.innerText = "인코딩 중...";
-        gif.on('finished', function(blob) {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `텐카_움짤_${dateStr}.gif`;
-            link.click();
-            activeGifs.forEach(g => g.superGif.play());
-            loading.style.display = 'none';
+        gif.on('finished', (blob) => {
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `텐카_움짤.gif`; link.click();
+            activeGifs.forEach(g => g.superGif.play()); loading.style.display = 'none';
         });
         gif.render();
     });
 
     document.getElementById('mobile-mode-toggle').addEventListener('change', (e) => {
-        const wrapper = document.getElementById('canvas-wrapper');
-        if (e.target.checked) {
-            document.body.classList.add('mobile-mode');
-            const winWidth = window.innerWidth;
-            const scale = Math.min((winWidth - 40) / 1024, 1);
-            wrapper.style.transform = `scale(${scale})`;
-            wrapper.style.marginTop = '0px';
-        } else {
-            document.body.classList.remove('mobile-mode');
-            wrapper.style.transform = 'scale(1)';
-            wrapper.style.marginTop = '0';
-        }
+        document.body.classList.toggle('mobile-mode', e.target.checked);
+        const scale = e.target.checked ? Math.min((window.innerWidth - 40) / 1024, 1) : 1;
+        document.getElementById('canvas-wrapper').style.transform = `scale(${scale})`;
     });
 
     window.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
-        if (e.key === 'Delete') { deleteActiveObject(); }
-    });
-    
-    document.getElementById('font-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            const fontFace = new FontFace('CustomFont', ev.target.result);
-            await fontFace.load();
-            document.fonts.add(fontFace);
-            ['text_tl', 'text_bl', 'text_tr'].forEach(k => { if(layers[k]) layers[k].set('fontFamily', 'CustomFont'); });
-            canvas.requestRenderAll();
-            alert('새로운 폰트가 적용되었습니다.');
-        };
-        reader.readAsArrayBuffer(file);
-    });
-
-    document.getElementById('sgdb-search-btn').addEventListener('click', function() {
-        const term = document.getElementById('sgdb-input').value.trim();
-        if (term) window.open(`https://www.steamgriddb.com/search/grids?term=${encodeURIComponent(term)}`, '_blank');
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
+        if (e.key === 'Delete') deleteActiveObject();
     });
 
     document.getElementById('img-input-1').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img1'));
@@ -855,12 +599,9 @@
     document.getElementById('img-input-3').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img3'));
 
     function onSelectionChange(e) {
-        const obj = e.selected[0];
-        setFocusMode(obj);
+        const obj = e.selected[0]; setFocusMode(obj);
         let val = 'none';
-        if (obj === layers.img1) val = 'img1';
-        else if (obj === layers.img2) val = 'img2';
-        else if (obj === layers.img3) val = 'img3';
+        if (obj === layers.img1) val = 'img1'; else if (obj === layers.img2) val = 'img2'; else if (obj === layers.img3) val = 'img3';
         const radio = document.querySelector(`input[name="target"][value="${val}"]`);
         if (radio) radio.checked = true;
     }
