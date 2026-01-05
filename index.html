@@ -240,7 +240,6 @@
                     <button onclick="deleteActiveObject()" style="font-size: 12px; padding: 5px; background: #dc3545; color: white; border: none;">삭제</button>
                 </div>
             </div>
-            <div class="hint">마우스 휠로 확대/축소, <b>Alt+드래그</b>로 화면 이동이 가능합니다.</div>
         </div>
     </div>
 
@@ -672,44 +671,6 @@
         document.querySelector('input[name="target"][value="none"]').checked = true;
     });
 
-    // 마우스 휠 줌 기능
-    canvas.on('mouse:wheel', function(opt) {
-        var delta = opt.e.deltaY;
-        var zoom = canvas.getZoom();
-        zoom *= 0.999 ** delta;
-        if (zoom > 20) zoom = 20;
-        if (zoom < 0.01) zoom = 0.01;
-        canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-        opt.e.preventDefault();
-        opt.e.stopPropagation();
-    });
-
-    // 작업창 드래그 이동 기능 (Alt + 드래그)
-    canvas.on('mouse:down', function(opt) {
-        const evt = opt.e;
-        if (evt.altKey === true) {
-            this.isDragging = true;
-            this.selection = false;
-            this.lastPosX = evt.clientX;
-            this.lastPosY = evt.clientY;
-        }
-    });
-    canvas.on('mouse:move', function(opt) {
-        if (this.isDragging) {
-            const e = opt.e;
-            const vpt = this.viewportTransform;
-            vpt[4] += e.clientX - this.lastPosX;
-            vpt[5] += e.clientY - this.lastPosY;
-            this.requestRenderAll();
-            this.lastPosX = e.clientX;
-            this.lastPosY = e.clientY;
-        }
-    });
-    canvas.on('mouse:up', function(opt) {
-        this.setViewportTransform(this.viewportTransform);
-        this.isDragging = false;
-    });
-
     function setFocusMode(activeObj) {
         if (!layers.overlay) return;
         const photoTargets = [layers.img1, layers.img2, layers.img3];
@@ -880,8 +841,6 @@
 
     // 저장 버튼 클릭 이벤트
     document.getElementById('save-btn').addEventListener('click', async () => {
-        const originalVpt = canvas.viewportTransform.slice();
-        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
         canvas.discardActiveObject();
         resetAllOpacities();
 
@@ -905,7 +864,6 @@
                 const link = document.createElement('a');
                 link.download = `텐카_결과물_${dateStr}.png`;
                 link.href = dataURL; link.click();
-                canvas.setViewportTransform(originalVpt);
                 wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
                 loading.style.display = 'none';
             }, 100);
@@ -963,7 +921,6 @@
             link.download = `텐카_움짤_${dateStr}.gif`;
             link.click();
             activeGifs.forEach(g => g.superGif.play());
-            canvas.setViewportTransform(originalVpt);
             wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
             loading.style.display = 'none';
         });
