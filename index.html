@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터 (수정판)</title>
+    <title>텐카 템플릿 - 에디터 (UI 개선판)</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -81,18 +81,51 @@
             text-align: center;
         }
 
-        /* 컨트롤 그룹 */
+        /* 컨트롤 그룹 및 아코디언 */
         .control-section {
-            margin-bottom: 25px;
-            padding-bottom: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
             border-bottom: 1px solid #f1f3f5;
         }
         .section-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
         }
+        .section-content {
+            display: block; /* 기본은 펼침 */
+        }
+        .section-content.collapsed {
+            display: none;
+        }
+        .toggle-arrow {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+        .collapsed + .section-content {
+            display: none;
+        }
+
+        /* 초기화 버튼 스타일 */
+        .reset-mini-btn {
+            background: none;
+            border: none;
+            color: #adb5bd;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0 4px;
+            margin-left: 5px;
+            display: inline-flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+        .reset-mini-btn:hover { color: #dc3545; }
 
         /* 캔버스 컨테이너 */
         .canvas-container-wrapper {
@@ -140,7 +173,7 @@
         
         /* 폰트 컨트롤 */
         .slider-item { margin: 8px 0; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
-        .slider-item input[type="range"] { width: 100px; }
+        .slider-item input[type="range"] { width: 90px; }
         .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; text-align: center; }
 
         /* 로딩 오버레이 */
@@ -165,43 +198,63 @@
 
 <aside class="sidebar">
     <div class="control-section">
-        <div class="section-title">🖼️ 이미지 업로드 (GIF 지원)</div>
-        <button class="upload-btn" onclick="document.getElementById('img-input-1').click();">말풍선 사진</button>
-        <button class="upload-btn" onclick="document.getElementById('img-input-2').click();">핸드폰 사진</button>
-        <button class="upload-btn" onclick="document.getElementById('img-input-3').click();">로고 사진</button>
-        <input type="file" id="img-input-1" accept="image/*" style="display:none" onclick="this.value=null">
-        <input type="file" id="img-input-2" accept="image/*" style="display:none" onclick="this.value=null">
-        <input type="file" id="img-input-3" accept="image/*" style="display:none" onclick="this.value=null">
-    </div>
-
-    <div class="control-section">
-        <div class="section-title">🕹️ 조작 대상</div>
-        <div class="selector-box">
-            <label><input type="radio" name="target" value="none" checked> 선택 없음</label>
-            <label><input type="radio" name="target" value="img1"> 말풍선 사진</label>
-            <label><input type="radio" name="target" value="img2"> 핸드폰 사진</label>
-            <label><input type="radio" name="target" value="img3"> 로고 사진</label>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 10px;">
-                <button onclick="resetActiveObject()" style="font-size: 12px; padding: 5px;">초기화</button>
-                <button onclick="rotateActiveObject()" style="font-size: 12px; padding: 5px;">회전</button>
-                <button onclick="flipActiveObject()" style="font-size: 12px; padding: 5px;">반전</button>
-                <button onclick="deleteActiveObject()" style="font-size: 12px; padding: 5px; background: #dc3545; color: white; border: none;">삭제</button>
-            </div>
+        <div class="section-title" onclick="toggleSection(this)">
+            <span>🖼️ 이미지 업로드 (GIF 지원)</span>
+            <span class="toggle-arrow">▼</span>
         </div>
-        <div class="hint">마우스 휠로 확대/축소가 가능합니다. 이미지를 클릭하거나 라디오 버튼으로 선택 후 조작하세요.</div>
+        <div class="section-content">
+            <button class="upload-btn" onclick="document.getElementById('img-input-1').click();">말풍선 사진</button>
+            <button class="upload-btn" onclick="document.getElementById('img-input-2').click();">핸드폰 사진</button>
+            <button class="upload-btn" onclick="document.getElementById('img-input-3').click();">로고 사진</button>
+            <input type="file" id="img-input-1" accept="image/*" style="display:none" onclick="this.value=null">
+            <input type="file" id="img-input-2" accept="image/*" style="display:none" onclick="this.value=null">
+            <input type="file" id="img-input-3" accept="image/*" style="display:none" onclick="this.value=null">
+        </div>
     </div>
 
     <div class="control-section">
-        <div class="section-title">🔍 SteamGridDB 검색</div>
-        <input type="text" id="sgdb-input" placeholder="게임명 입력" style="width: 100%; padding: 8px; margin-bottom: 5px; box-sizing: border-box;">
-        <button class="upload-btn" id="sgdb-search-btn" style="background:#495057">검색하기</button>
+        <div class="section-title" onclick="toggleSection(this)">
+            <span>🕹️ 조작 대상</span>
+            <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="section-content">
+            <div class="selector-box">
+                <label><input type="radio" name="target" value="none" checked> 선택 없음</label>
+                <label><input type="radio" name="target" value="img1"> 말풍선 사진</label>
+                <label><input type="radio" name="target" value="img2"> 핸드폰 사진</label>
+                <label><input type="radio" name="target" value="img3"> 로고 사진</label>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 10px;">
+                    <button onclick="resetActiveObject()" style="font-size: 12px; padding: 5px;">초기화</button>
+                    <button onclick="rotateActiveObject()" style="font-size: 12px; padding: 5px;">회전</button>
+                    <button onclick="flipActiveObject()" style="font-size: 12px; padding: 5px;">반전</button>
+                    <button onclick="deleteActiveObject()" style="font-size: 12px; padding: 5px; background: #dc3545; color: white; border: none;">삭제</button>
+                </div>
+            </div>
+            <div class="hint">마우스 휠로 확대/축소가 가능합니다. 이미지를 클릭하거나 라디오 버튼으로 선택 후 조작하세요.</div>
+        </div>
     </div>
 
     <div class="control-section">
-        <div class="section-title">📊 움짤 정보 (측정됨)</div>
-        <div id="detected-fps-info" style="font-size: 13px; color: #495057; line-height: 1.6;">
-            측정된 FPS: -
+        <div class="section-title" onclick="toggleSection(this)">
+            <span>🔍 SteamGridDB 검색</span>
+            <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="section-content">
+            <input type="text" id="sgdb-input" placeholder="게임명 입력" style="width: 100%; padding: 8px; margin-bottom: 5px; box-sizing: border-box;">
+            <button class="upload-btn" id="sgdb-search-btn" style="background:#495057">검색하기</button>
+        </div>
+    </div>
+
+    <div class="control-section">
+        <div class="section-title" onclick="toggleSection(this)">
+            <span>📊 움짤 정보 (측정됨)</span>
+            <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="section-content">
+            <div id="detected-fps-info" style="font-size: 13px; color: #495057; line-height: 1.6;">
+                측정된 FPS: -
+            </div>
         </div>
     </div>
 </aside>
@@ -214,88 +267,113 @@
 
 <aside class="sidebar right">
     <div class="control-section">
-        <div class="section-title">⚙️ 환경 설정</div>
-        <label style="cursor:pointer; font-size: 14px; font-weight: bold; color: #007bff;">
-            <input type="checkbox" id="mobile-mode-toggle"> 모바일 최적화 UI 모드
-        </label>
-    </div>
-
-    <div class="control-section">
-        <div class="section-title">🔤 폰트 설정</div>
-        <button class="font-btn" onclick="document.getElementById('font-input').click();">폰트 변경</button>
-        <input type="file" id="font-input" accept=".ttf, .otf, .woff, .woff2" style="display:none" onclick="this.value=null">
-        
-        <div id="manual-font-controls" style="margin-top: 10px;">
-            <div class="slider-item">
-                좌상단: 
-                <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="41">
-                <input type="number" class="num-input font-num" data-id="text_tl" value="41">
-            </div>
-            <div class="slider-item">
-                좌하단: 
-                <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="24">
-                <input type="number" class="num-input font-num" data-id="text_bl" value="24">
-            </div>
-            <div class="slider-item">
-                우상단: 
-                <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="44">
-                <input type="number" class="num-input font-num" data-id="text_tr" value="44">
-            </div>
+        <div class="section-title" onclick="toggleSection(this)">
+            <span>⚙️ 환경 설정</span>
+            <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="section-content">
+            <label style="cursor:pointer; font-size: 14px; font-weight: bold; color: #007bff;">
+                <input type="checkbox" id="mobile-mode-toggle"> 모바일 최적화 UI 모드
+            </label>
         </div>
     </div>
 
     <div class="control-section">
-        <div class="section-title">✨ 효과 설정</div>
-        <label style="cursor:pointer; font-size: 14px; display: block; margin-bottom: 8px;"><input type="checkbox" id="logo-shadow-toggle"> 로고 그림자 설정</label>
-        <div id="logo-shadow-controls" style="display: none; margin-top: 10px; font-size: 13px;">
-            <div class="slider-item">블러: <input type="range" id="logo-shadow-blur" min="0" max="50" value="10"></div>
-            <div class="slider-item">X축: <input type="range" id="logo-shadow-offsetx" min="-50" max="50" value="5"></div>
-            <div class="slider-item">Y축: <input type="range" id="logo-shadow-offsety" min="-50" max="50" value="5"></div>
-            <div class="slider-item">색상: <input type="color" id="logo-shadow-color" value="#000000"></div>
+        <div class="section-title" onclick="toggleSection(this)">
+            <span>🔤 폰트 설정</span>
+            <span class="toggle-arrow">▼</span>
         </div>
-
-        <label style="cursor:pointer; font-size: 14px; display: block; margin-top: 10px;"><input type="checkbox" id="logo-border-toggle"> 로고 테두리 설정</label>
-        <div id="logo-border-controls" style="display: none; margin-top: 10px; font-size: 13px;">
-            <div class="slider-item">
-                두께: 
-                <input type="range" id="logo-border-width" min="0" step="0.01" max="15" value="2.5">
-                <input type="number" id="logo-border-num" class="num-input" value="2.5" step="0.01">
-            </div>
-            <div class="slider-item">
-                색상: <input type="color" id="logo-border-color" value="#000000">
+        <div class="section-content">
+            <button class="font-btn" onclick="document.getElementById('font-input').click();">폰트 변경</button>
+            <input type="file" id="font-input" accept=".ttf, .otf, .woff, .woff2" style="display:none" onclick="this.value=null">
+            
+            <div id="manual-font-controls" style="margin-top: 10px;">
+                <div class="slider-item">
+                    <span>좌상단:<button class="reset-mini-btn" onclick="resetInputValue('text_tl', 41, true)">↺</button></span>
+                    <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="41">
+                    <input type="number" class="num-input font-num" data-id="text_tl" value="41">
+                </div>
+                <div class="slider-item">
+                    <span>좌하단:<button class="reset-mini-btn" onclick="resetInputValue('text_bl', 24, true)">↺</button></span>
+                    <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="24">
+                    <input type="number" class="num-input font-num" data-id="text_bl" value="24">
+                </div>
+                <div class="slider-item">
+                    <span>우상단:<button class="reset-mini-btn" onclick="resetInputValue('text_tr', 44, true)">↺</button></span>
+                    <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="44">
+                    <input type="number" class="num-input font-num" data-id="text_tr" value="44">
+                </div>
             </div>
         </div>
     </div>
 
     <div class="control-section">
-        <div class="section-title">💾 저장 설정 및 최적화</div>
-        <div class="slider-item">
-            재생 배속: 
-            <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1" style="width: 60px;">
+        <div class="section-title" onclick="toggleSection(this)">
+            <span>✨ 효과 설정</span>
+            <span class="toggle-arrow">▼</span>
         </div>
-        <div class="slider-item">
-            FPS 설정: 
-            <input type="number" id="gif-fps-input" class="num-input" value="0" style="width: 60px;">
+        <div class="section-content">
+            <label style="cursor:pointer; font-size: 14px; display: block; margin-bottom: 8px;">
+                <input type="checkbox" id="logo-shadow-toggle"> 로고 그림자 설정
+                <button class="reset-mini-btn" onclick="resetShadow()">↺</button>
+            </label>
+            <div id="logo-shadow-controls" style="display: none; margin-top: 10px; font-size: 13px;">
+                <div class="slider-item">블러: <input type="range" id="logo-shadow-blur" min="0" max="50" value="10"></div>
+                <div class="slider-item">X축: <input type="range" id="logo-shadow-offsetx" min="-50" max="50" value="5"></div>
+                <div class="slider-item">Y축: <input type="range" id="logo-shadow-offsety" min="-50" max="50" value="5"></div>
+                <div class="slider-item">색상: <input type="color" id="logo-shadow-color" value="#000000"></div>
+            </div>
+
+            <label style="cursor:pointer; font-size: 14px; display: block; margin-top: 10px;">
+                <input type="checkbox" id="logo-border-toggle"> 로고 테두리 설정
+                <button class="reset-mini-btn" onclick="resetBorder()">↺</button>
+            </label>
+            <div id="logo-border-controls" style="display: none; margin-top: 10px; font-size: 13px;">
+                <div class="slider-item">
+                    두께: 
+                    <input type="range" id="logo-border-width" min="0" step="0.01" max="15" value="2.5">
+                    <input type="number" id="logo-border-num" class="num-input" value="2.5" step="0.01">
+                </div>
+                <div class="slider-item">
+                    색상: <input type="color" id="logo-border-color" value="#000000">
+                </div>
+            </div>
         </div>
-        <div class="slider-item">
-            지연 시간(ms): 
-            <input type="number" id="gif-delay-input" class="num-input" value="0" style="width: 60px;">
+    </div>
+
+    <div class="control-section">
+        <div class="section-title" onclick="toggleSection(this)">
+            <span>💾 저장 및 최적화</span>
+            <span class="toggle-arrow">▼</span>
         </div>
-        <div class="slider-item">
-            해상도 배율: 
-            <select id="res-scale-input" class="num-input" style="width: 70px;">
-                <option value="0.5">0.5x</option>
-                <option value="0.75">0.75x</option>
-                <option value="1.0" selected>1.0x</option>
-                <option value="1.5">1.5x</option>
-                <option value="2.0">2.0x</option>
-            </select>
+        <div class="section-content">
+            <div class="slider-item">
+                <span>배속:<button class="reset-mini-btn" onclick="resetPlainInput('gif-speed-input', 1.0)">↺</button></span>
+                <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1">
+            </div>
+            <div class="slider-item">
+                <span>FPS:<button class="reset-mini-btn" onclick="resetPlainInput('gif-fps-input', 0)">↺</button></span>
+                <input type="number" id="gif-fps-input" class="num-input" value="0">
+            </div>
+            <div class="slider-item">
+                <span>지연(ms):<button class="reset-mini-btn" onclick="resetPlainInput('gif-delay-input', 0)">↺</button></span>
+                <input type="number" id="gif-delay-input" class="num-input" value="0">
+            </div>
+            <div class="slider-item">
+                <span>배율:<button class="reset-mini-btn" onclick="resetPlainInput('res-scale-input', '1.0')">↺</button></span>
+                <select id="res-scale-input" class="num-input" style="width: 70px;">
+                    <option value="0.5">0.5x</option>
+                    <option value="0.75">0.75x</option>
+                    <option value="1.0" selected>1.0x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2.0">2.0x</option>
+                </select>
+            </div>
+            <div class="slider-item">
+                <span>품질:<button class="reset-mini-btn" onclick="resetPlainInput('gif-quality-input', 10)">↺</button></span>
+                <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20">
+            </div>
         </div>
-        <div class="slider-item">
-            GIF 품질(1-20): 
-            <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20" style="width: 60px;">
-        </div>
-        <div class="hint">배속을 높이면 움직임이 빨라집니다.</div>
     </div>
 
     <div style="margin-top: auto;">
@@ -335,6 +413,54 @@
     const activeGifs = [];
 
     document.fonts.ready.then(() => { initCanvas(); });
+
+    // UI 제어 함수
+    function toggleSection(header) {
+        const content = header.nextElementSibling;
+        const arrow = header.querySelector('.toggle-arrow');
+        content.classList.toggle('collapsed');
+        if (content.classList.contains('collapsed')) {
+            arrow.style.transform = 'rotate(-90deg)';
+        } else {
+            arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    function resetInputValue(id, val, isFont = false) {
+        const sliders = document.querySelectorAll(`.font-slider[data-id="${id}"]`);
+        const nums = document.querySelectorAll(`.num-input[data-id="${id}"]`);
+        sliders.forEach(s => s.value = val);
+        nums.forEach(n => n.value = val);
+        if (isFont && layers[id]) {
+            layers[id].set('fontSize', val);
+            alignVerticalCenter(layers[id]);
+            canvas.requestRenderAll();
+            saveHistory();
+        }
+    }
+
+    function resetPlainInput(id, val) {
+        document.getElementById(id).value = val;
+    }
+
+    function resetShadow() {
+        document.getElementById('logo-shadow-toggle').checked = false;
+        document.getElementById('logo-shadow-blur').value = 10;
+        document.getElementById('logo-shadow-offsetx').value = 5;
+        document.getElementById('logo-shadow-offsety').value = 5;
+        document.getElementById('logo-shadow-color').value = "#000000";
+        document.getElementById('logo-shadow-controls').style.display = 'none';
+        updateLogoEffects();
+    }
+
+    function resetBorder() {
+        document.getElementById('logo-border-toggle').checked = false;
+        document.getElementById('logo-border-width').value = 2.5;
+        document.getElementById('logo-border-num').value = 2.5;
+        document.getElementById('logo-border-color').value = "#000000";
+        document.getElementById('logo-border-controls').style.display = 'none';
+        updateLogoEffects();
+    }
 
     function initCanvas() {
         createPlaceholders();
@@ -622,36 +748,27 @@
         const shadowOn = document.getElementById('logo-shadow-toggle').checked;
         const borderOn = document.getElementById('logo-border-toggle').checked;
 
-        // 기존의 사각형 기반 stroke 및 shadow 설정은 제거합니다.
         layers.img3.set({ stroke: null, strokeWidth: 0, shadow: null });
 
-        // 두 효과가 모두 꺼져 있으면 기본 렌더링으로 복구합니다.
         if (!shadowOn && !borderOn) {
             delete layers.img3._render;
             canvas.requestRenderAll();
             return;
         }
 
-        // 투명도를 인식하여 테두리와 그림자를 동시에 그리기 위한 커스텀 렌더러
         layers.img3._render = function(ctx) {
             const el = this._element;
             if (!el) return;
-
             ctx.save();
             const w = this.width;
             const h = this.height;
 
-            // 1. 테두리 설정 (Border) - 투명도를 따르는 '선' 처리
-            // CSS 필터의 drop-shadow는 블러를 0으로 줄 경우 투명도를 따라 날카로운 실선을 형성합니다.
             if (borderOn) {
                 const bWidth = parseFloat(document.getElementById('logo-border-width').value);
                 const bColor = document.getElementById('logo-border-color').value;
-                // 4방향으로 선을 겹쳐 투명 영역 주변에 실선을 생성합니다.
                 ctx.filter = `drop-shadow(${bWidth}px 0 0 ${bColor}) drop-shadow(-${bWidth}px 0 0 ${bColor}) drop-shadow(0 ${bWidth}px 0 ${bColor}) drop-shadow(0 -${bWidth}px 0 ${bColor})`;
             }
 
-            // 2. 그림자 설정 (Shadow) - 투명도를 따르는 부드러운 '그림자' 처리
-            // Canvas 고유의 Shadow 기능을 사용하여 부드러운 확산 효과를 줍니다.
             if (shadowOn) {
                 ctx.shadowColor = document.getElementById('logo-shadow-color').value;
                 ctx.shadowBlur = parseInt(document.getElementById('logo-shadow-blur').value);
@@ -659,9 +776,7 @@
                 ctx.shadowOffsetY = parseInt(document.getElementById('logo-shadow-offsety').value);
             }
 
-            // 필터와 그림자 설정이 적용된 상태에서 이미지 요소를 중앙에 맞춰 그립니다.
             ctx.drawImage(el, -w/2, -h/2, w, h);
-            
             ctx.restore();
         };
 
@@ -669,7 +784,6 @@
         saveHistory();
     }
     
-    // 이벤트 리스너 연결
     document.getElementById('logo-shadow-toggle').addEventListener('change', (e) => {
         document.getElementById('logo-shadow-controls').style.display = e.target.checked ? 'block' : 'none';
         updateLogoEffects();
