@@ -795,7 +795,6 @@
     let stateHistory = [];
     let historyStep = -1;
     let isHistoryLocked = false;
-    // SAVE_PROPS에 'editable' 추가
     const SAVE_PROPS = ['id', 'fixedHeight', 'selectable', 'evented', 'editable', '_layerKey', '_originalState', 'padding', '_originalTop'];
 
     function saveHistory() {
@@ -816,6 +815,7 @@
             const objs = canvas.getObjects();
             layers.img1 = layers.img2 = layers.img3 = null;
             objs.forEach(obj => {
+                obj.setCoords(); // 좌표 갱신 추가
                 if (obj._layerKey) {
                     layers[obj._layerKey] = obj;
                     if(clipRects[obj._layerKey]) {
@@ -823,8 +823,6 @@
                     }
                 }
                 if (obj.type === 'textbox') {
-                    // 불러올 때 편집 가능 속성 강제 활성화
-                    obj.set('editable', true);
                     obj.on('changed', () => { alignVerticalCenter(obj); saveHistory(); });
                     obj.on('scaling', function() {
                         const scaleX = this.scaleX;
