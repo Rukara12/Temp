@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <script src="coi-serviceworker.js"></script> 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>텐카 템플릿 - 에디터 (GitHub Pages 호환판)</title>
@@ -415,7 +416,7 @@
 
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js"></script>
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js"></script>
+<script src="./lib/ffmpeg.js"></script>
 <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
 <script>
@@ -439,7 +440,7 @@
     let activeGifs = [];
 
     const { FFmpeg } = window.FFmpegWASM;
-    const { fetchFile, toBlobURL } = window.FFmpegUtil; // toBlobURL 추가
+    const { fetchFile, toBlobURL } = window.FFmpegUtil; 
     let ffmpeg = null;
 
     async function initFFmpeg() {
@@ -449,8 +450,8 @@
             console.log('[FFmpeg]', message);
         });
 
-        // [수정] GitHub Pages 교차 출처 Worker 오류 해결을 위해 toBlobURL 사용
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+        // [수정] GitHub Pages에서 로컬 폴더(lib) 내의 코어 파일을 직접 로드하도록 수정
+        const baseURL = './lib'; 
         await ffmpeg.load({
             coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
             wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
