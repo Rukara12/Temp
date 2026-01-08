@@ -267,7 +267,7 @@
     </div>
 </aside>
 
-<main class="main-content">
+<main class="main-content" id="drop-zone">
     <div class="canvas-container-wrapper" id="canvas-wrapper">
         <canvas id="c" width="1024" height="765"></canvas>
     </div>
@@ -509,7 +509,7 @@
         const commonStyle = {
             fontFamily: 'PyeongtaekSunset', fontWeight: 'bold', textAlign: 'center',
             fill: '#000000', lineHeight: 1.2, originX: 'left', originY: 'top',
-            editable: true, splitByGrapheme: true, padding: 15
+            editable: true, splitByGrapheme: false, padding: 15
         };
 
         const createText = (text, l, t, w, h, key, defaultSize) => {
@@ -1033,6 +1033,34 @@
     document.getElementById('img-input-1').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img1'));
     document.getElementById('img-input-2').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img2'));
     document.getElementById('img-input-3').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img3'));
+
+    // 드래그 앤 드롭 이벤트 처리 추가
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.style.backgroundColor = '#adb5bd'; // 시각적 피드백
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.style.backgroundColor = '#ced4da';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.style.backgroundColor = '#ced4da';
+
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+            // 현재 라디오 버튼으로 선택된 레이어 확인, 없으면 img1 기본값
+            const selectedTarget = document.querySelector('input[name="target"]:checked').value;
+            const targetLayer = (selectedTarget !== 'none' && selectedTarget.startsWith('img')) ? selectedTarget : 'img1';
+            handleImageUpload(files[0], targetLayer);
+        }
+    });
 
     function onSelectionChange(e) {
         const obj = e.selected[0];
