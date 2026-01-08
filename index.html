@@ -1034,12 +1034,12 @@
     document.getElementById('img-input-2').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img2'));
     document.getElementById('img-input-3').addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'img3'));
 
-    // 드래그 앤 드롭 이벤트 처리 추가
+    // 드래그 앤 드롭 이벤트 처리 수정
     const dropZone = document.getElementById('drop-zone');
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        dropZone.style.backgroundColor = '#adb5bd'; // 시각적 피드백
+        dropZone.style.backgroundColor = '#adb5bd';
     });
 
     dropZone.addEventListener('dragleave', (e) => {
@@ -1055,9 +1055,25 @@
 
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
-            // 현재 라디오 버튼으로 선택된 레이어 확인, 없으면 img1 기본값
             const selectedTarget = document.querySelector('input[name="target"]:checked').value;
-            const targetLayer = (selectedTarget !== 'none' && selectedTarget.startsWith('img')) ? selectedTarget : 'img1';
+            let targetLayer = selectedTarget;
+
+            // 선택된 레이어가 없거나 이미지 레이어가 아닐 때 마우스 좌표 기준 감지
+            if (selectedTarget === 'none' || !selectedTarget.startsWith('img')) {
+                const pointer = canvas.getPointer(e);
+                const x = pointer.x;
+                const y = pointer.y;
+
+                // 기본 레이어는 img1로 설정하되, 각 클리핑 영역 안에 마우스가 있다면 해당 레이어로 변경
+                targetLayer = 'img1'; 
+                for (const [key, rect] of Object.entries(clipRects)) {
+                    if (x >= rect.left && x <= rect.left + rect.width &&
+                        y >= rect.top && y <= rect.top + rect.height) {
+                        targetLayer = key;
+                        break;
+                    }
+                }
+            }
             handleImageUpload(files[0], targetLayer);
         }
     });
