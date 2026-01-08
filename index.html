@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터 (UI/초기화 개선판)</title>
+    <title>텐카 템플릿 에디터</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -799,8 +799,8 @@
     let stateHistory = [];
     let historyStep = -1;
     let isHistoryLocked = false;
-    // [수정] GIF 복구를 위해 _gifDataUrl 속성 추가
-    const SAVE_PROPS = ['id', 'fixedHeight', 'selectable', 'evented', '_layerKey', '_originalState', 'padding', '_originalTop', '_gifDataUrl'];
+    // [수정] GIF 복구 및 텍스트 편집 유지를 위해 속성 추가 (editable 추가)
+    const SAVE_PROPS = ['editable', 'id', 'fixedHeight', 'selectable', 'evented', '_layerKey', '_originalState', 'padding', '_originalTop', '_gifDataUrl'];
 
     function saveHistory() {
         if (isHistoryLocked) return;
@@ -817,6 +817,9 @@
     function loadState(json) {
         isHistoryLocked = true;
         
+        // [수정] 로드 시점에 선택 상태 해제 (텍스트 고정 방지)
+        canvas.discardActiveObject();
+
         // [수정] 메모리 누수 방지 및 GIF 초기화
         activeGifs.forEach(g => {
             if (g.superGif) g.superGif.pause();
@@ -845,8 +848,9 @@
                     }
                 }
 
-                // 텍스트 이벤트 리스너 복구
+                // 텍스트 이벤트 리스너 및 편집 가능 상태 복구
                 if (obj.type === 'textbox') {
+                    obj.set('editable', true); // 명시적 편집 허용
                     obj.on('changed', () => { alignVerticalCenter(obj); saveHistory(); });
                     obj.on('scaling', function() {
                         const scaleX = this.scaleX;
