@@ -59,6 +59,11 @@
             box-sizing: border-box;
             overflow-y: visible;
         }
+        
+        /* 모바일 모드에서 하단 바 공간 확보 */
+        body.mobile-mode .sidebar.right {
+            padding-bottom: 80px;
+        }
 
         /* 메인 작업 영역 */
         .main-content {
@@ -165,6 +170,11 @@
         .history-btn { background: #6c757d; color: white; border: none; font-size: 12px; padding: 8px; flex: 1; }
         .issue-btn { background: #ffc107; color: #212529; border: none; margin-bottom: 5px; }
 
+        /* 모바일 터치 타겟 확대 */
+        body.mobile-mode button:not(.reset-mini-btn) {
+            min-height: 44px;
+        }
+
         .selector-box {
             background: #f8f9fa;
             padding: 12px;
@@ -196,6 +206,29 @@
             width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 모바일 전용 고정 하단 바 */
+        .mobile-quick-bar {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #ffffff;
+            border-top: 1px solid #dee2e6;
+            padding: 10px;
+            box-sizing: border-box;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            gap: 8px;
+        }
+        body.mobile-mode .mobile-quick-bar {
+            display: flex;
+        }
+        .mobile-quick-bar button {
+            margin-bottom: 0 !important;
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -299,17 +332,17 @@
                 <div class="slider-item">
                     <div class="label-with-reset">좌상단 <button class="reset-mini-btn" onclick="resetInputValue('text_tl', 41, true)">↺</button></div>
                     <input type="range" class="font-slider" data-id="text_tl" min="10" max="150" value="41">
-                    <input type="number" class="num-input font-num" data-id="text_tl" value="41">
+                    <input type="number" class="num-input font-num" data-id="text_tl" value="41" inputmode="numeric">
                 </div>
                 <div class="slider-item">
                     <div class="label-with-reset">좌하단 <button class="reset-mini-btn" onclick="resetInputValue('text_bl', 24, true)">↺</button></div>
                     <input type="range" class="font-slider" data-id="text_bl" min="10" max="150" value="24">
-                    <input type="number" class="num-input font-num" data-id="text_bl" value="24">
+                    <input type="number" class="num-input font-num" data-id="text_bl" value="24" inputmode="numeric">
                 </div>
                 <div class="slider-item">
                     <div class="label-with-reset">우상단 <button class="reset-mini-btn" onclick="resetInputValue('text_tr', 44, true)">↺</button></div>
                     <input type="range" class="font-slider" data-id="text_tr" min="10" max="150" value="44">
-                    <input type="number" class="num-input font-num" data-id="text_tr" value="44">
+                    <input type="number" class="num-input font-num" data-id="text_tr" value="44" inputmode="numeric">
                 </div>
             </div>
         </div>
@@ -344,7 +377,7 @@
                 <div class="slider-item">
                     두께: 
                     <input type="range" id="logo-border-width" min="0" step="0.01" max="15" value="2.5">
-                    <input type="number" id="logo-border-num" class="num-input" value="2.5" step="0.01">
+                    <input type="number" id="logo-border-num" class="num-input" value="2.5" step="0.01" inputmode="decimal">
                 </div>
                 <div class="slider-item">
                     색상: <input type="color" id="logo-border-color" value="#000000">
@@ -361,15 +394,15 @@
         <div class="section-content">
             <div class="slider-item">
                 <div class="label-with-reset">배속(움짤) <button class="reset-mini-btn" onclick="resetPlainInput('gif-speed-input', 1.0)">↺</button></div>
-                <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1">
+                <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1" inputmode="decimal">
             </div>
             <div class="slider-item">
                 <div class="label-with-reset">FPS(움짤) <button class="reset-mini-btn" onclick="resetPlainInput('gif-fps-input', 0)">↺</button></div>
-                <input type="number" id="gif-fps-input" class="num-input" value="0">
+                <input type="number" id="gif-fps-input" class="num-input" value="0" inputmode="numeric">
             </div>
             <div class="slider-item">
                 <div class="label-with-reset">지연(움짤) <button class="reset-mini-btn" onclick="resetPlainInput('gif-delay-input', 0)">↺</button></div>
-                <input type="number" id="gif-delay-input" class="num-input" value="0">
+                <input type="number" id="gif-delay-input" class="num-input" value="0" inputmode="numeric">
             </div>
             <div class="slider-item">
                 <div class="label-with-reset">배율 <button class="reset-mini-btn" onclick="resetPlainInput('res-scale-input', '1.0')">↺</button></div>
@@ -383,7 +416,7 @@
             </div>
             <div class="slider-item">
                 <div class="label-with-reset">품질(움짤) <button class="reset-mini-btn" onclick="resetPlainInput('gif-quality-input', 10)">↺</button></div>
-                <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20">
+                <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20" inputmode="numeric">
             </div>
         </div>
     </div>
@@ -398,6 +431,12 @@
         <button class="save-btn" id="save-btn">최종 결과물 저장 (GIF/PNG)</button>
     </div>
 </aside>
+
+<div class="mobile-quick-bar">
+    <button class="history-btn" onclick="undo()" style="background:#495057">↩ 취소</button>
+    <button class="history-btn" onclick="redo()" style="background:#495057">↪ 복구</button>
+    <button class="save-btn" onclick="document.getElementById('save-btn').click()" style="padding:10px; font-size:14px;">💾 저장</button>
+</div>
 
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js"></script>
@@ -1083,7 +1122,7 @@
         const obj = e.selected[0];
         setFocusMode(obj);
 
-        // [추가된 부분] 텍스트 박스 선택 시 모바일에서 즉시 키보드 호출
+        // 텍스트 박스 선택 시 모바일에서 즉시 키보드 호출
         if (obj && obj.type === 'textbox') {
             setTimeout(() => {
                 obj.enterEditing();
