@@ -1082,6 +1082,17 @@
     function onSelectionChange(e) {
         const obj = e.selected[0];
         setFocusMode(obj);
+
+        // [추가된 부분] 텍스트 박스 선택 시 모바일에서 즉시 키보드 호출
+        if (obj && obj.type === 'textbox') {
+            setTimeout(() => {
+                obj.enterEditing();
+                if (obj.hiddenTextarea) {
+                    obj.hiddenTextarea.focus();
+                }
+            }, 50);
+        }
+
         let val = 'none';
         if (obj === layers.img1) val = 'img1';
         else if (obj === layers.img2) val = 'img2';
