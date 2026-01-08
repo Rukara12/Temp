@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <script src="coi-serviceworker.js"></script> 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>텐카 템플릿 - 에디터 (GitHub Pages 호환판)</title>
+    <title>텐카 템플릿 - 에디터 (UI/초기화 개선판)</title>
     <style>
         /* [1] 웹폰트 정의 */
         @font-face {
@@ -22,8 +21,7 @@
 
         /* [2] 레이아웃 스타일 */
         body { 
-            margin: 0;
-            padding: 0; 
+            margin: 0; padding: 0; 
             font-family: 'PyeongtaekSunset', sans-serif; 
             background-color: #e9ecef;
             display: flex;
@@ -160,18 +158,12 @@
             margin-bottom: 8px;
             transition: all 0.2s;
         }
-        button:hover { opacity: 0.8;
-        }
-        .save-btn { background: #28a745; color: white; border: none; font-size: 16px; padding: 15px;
-        margin-top: 10px; }
-        .upload-btn { background: #007bff; color: white; border: none;
-        }
-        .font-btn { background: #6c757d; color: white; border: none;
-        }
-        .history-btn { background: #6c757d; color: white; border: none; font-size: 12px; padding: 8px;
-        flex: 1; }
-        .issue-btn { background: #ffc107; color: #212529; border: none; margin-bottom: 5px;
-        }
+        button:hover { opacity: 0.8; }
+        .save-btn { background: #28a745; color: white; border: none; font-size: 16px; padding: 15px; margin-top: 10px; }
+        .upload-btn { background: #007bff; color: white; border: none; }
+        .font-btn { background: #6c757d; color: white; border: none; }
+        .history-btn { background: #6c757d; color: white; border: none; font-size: 12px; padding: 8px; flex: 1; }
+        .issue-btn { background: #ffc107; color: #212529; border: none; margin-bottom: 5px; }
 
         .selector-box {
             background: #f8f9fa;
@@ -186,32 +178,24 @@
             font-size: 14px;
         }
 
-        .hint { color: #868e96;
-        font-size: 12px; margin-top: 5px; line-height: 1.4; }
+        .hint { color: #868e96; font-size: 12px; margin-top: 5px; line-height: 1.4; }
         
         /* 폰트 컨트롤 */
-        .slider-item { margin: 8px 0;
-        display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
-        .slider-item input[type="range"] { width: 90px;
-        }
-        .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px;
-        font-size: 12px; text-align: center; }
+        .slider-item { margin: 8px 0; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+        .slider-item input[type="range"] { width: 90px; }
+        .num-input { width: 50px; padding: 4px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; text-align: center; }
 
         /* 로딩 오버레이 */
         #loading-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); color: white; z-index: 9999;
-            display: none; justify-content: center; align-items: center;
-            flex-direction: column;
+            display: none; justify-content: center; align-items: center; flex-direction: column;
         }
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db; border-radius: 50%;
+            border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%;
             width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg);
-        } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -399,7 +383,7 @@
             </div>
             <div class="slider-item">
                 <div class="label-with-reset">품질 <button class="reset-mini-btn" onclick="resetPlainInput('gif-quality-input', 10)">↺</button></div>
-                <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20" title="FFmpeg 모드에서는 자동 최적화됩니다.">
+                <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20">
             </div>
         </div>
     </div>
@@ -416,8 +400,7 @@
 
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js"></script>
-<script src="./lib/ffmpeg.js"></script>
-<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
 
 <script>
     const canvas = new fabric.Canvas('c', {
@@ -432,34 +415,18 @@
         img1: null, img2: null, img3: null, overlay: null,
         text_tl: null, text_bl: null, text_tr: null, placeholders: []
     };
+
     const clipRects = {
         img1: { left: 200, top: 0, width: 700, height: 440 },
         img2: { left: 531, top: 470, width: 90, height: 150 },
         img3: { left: 635, top: 415, width: 380, height: 340 }
     };
-    let activeGifs = [];
 
-    const { FFmpeg } = window.FFmpegWASM;
-    const { fetchFile, toBlobURL } = window.FFmpegUtil; 
-    let ffmpeg = null;
-
-    async function initFFmpeg() {
-        if (ffmpeg) return;
-        ffmpeg = new FFmpeg();
-        ffmpeg.on('log', ({ message }) => {
-            console.log('[FFmpeg]', message);
-        });
-
-        // [수정] GitHub Pages에서 로컬 폴더(lib) 내의 코어 파일을 직접 로드하도록 수정
-        const baseURL = './lib'; 
-        await ffmpeg.load({
-            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
-    }
+    let activeGifs = []; // var -> let으로 변경
 
     document.fonts.ready.then(() => { initCanvas(); });
 
+    // UI 제어 함수
     function toggleSection(header) {
         const content = header.nextElementSibling;
         const arrow = header.querySelector('.toggle-arrow');
@@ -489,6 +456,7 @@
     }
 
     function resetShadow() {
+        // 체크박스 상태는 유지하고 슬라이더만 초기화
         document.getElementById('logo-shadow-blur').value = 10;
         document.getElementById('logo-shadow-offsetx').value = 5;
         document.getElementById('logo-shadow-offsety').value = 5;
@@ -497,6 +465,7 @@
     }
 
     function resetBorder() {
+        // 체크박스 상태는 유지하고 슬라이더만 초기화
         document.getElementById('logo-border-width').value = 2.5;
         document.getElementById('logo-border-num').value = 2.5;
         document.getElementById('logo-border-color').value = "#000000";
@@ -516,6 +485,7 @@
             reorderLayers();
             saveHistory();
         };
+        // [수정] 마우스 조작(이동, 변형) 종료 시 히스토리 저장
         canvas.on('object:modified', saveHistory);
     }
 
@@ -544,6 +514,7 @@
             fill: '#000000', lineHeight: 1.2, originX: 'left', originY: 'top',
             editable: true, splitByGrapheme: true, padding: 15
         };
+
         const createText = (text, l, t, w, h, key, defaultSize) => {
             const tBox = new fabric.Textbox(text, {
                 ...commonStyle, left: l, top: t, width: w, height: h, fixedHeight: h, fontSize: defaultSize
@@ -552,17 +523,19 @@
             tBox._originalTop = t;
             layers[key] = tBox;
             canvas.add(tBox);
+            
             tBox.on('scaling', function() {
                 const scaleX = this.scaleX;
                 const newFontSize = this.fontSize * scaleX;
                 this.set({ fontSize: newFontSize, width: this.width * scaleX, scaleX: 1, scaleY: 1 });
                 syncFontControls(this);
             });
+
             tBox.on('changed', () => { alignVerticalCenter(tBox); saveHistory(); });
         };
 
-        createText("텐카쨩 반박하는 내용··· 듣기 싫은 말···", 1, 1, 215, 330, 'text_tl', 41);
-        createText("나쨩 미안··· 잘 안 들려··· 아무튼 어쩌구 저쩌구 한데다 이러저러하고 이래저래 장점이 많아서 재밌는 게임이라는 장황한 설명···", 1, 420, 230, 350, 'text_bl', 24);
+        createText("텐카쨩 반박하는 내용···\n듣기 싫은 말···", 1, 1, 215, 330, 'text_tl', 41);
+        createText("나쨩 미안··· 잘 안 들려···\n아무튼 어쩌구 저쩌구 한데다\n이러저러하고 이래저래\n장점이 많아서 재밌는 게임이라는\n장황한 설명···", 1, 420, 230, 350, 'text_bl', 24);
         createText("나쨩 이거 봐봐···!\n대충 어쩌구 저쩌구\n갓겜···!", 810, 1, 215, 410, 'text_tr', 44);
 
         Object.keys(layers).forEach(k => { if(k.startsWith('text')) alignVerticalCenter(layers[k]); });
@@ -573,10 +546,8 @@
         const textHeight = textbox.calcTextHeight();
         const boxHeight = textbox.fixedHeight;
         const originalTop = textbox._originalTop || textbox.top;
-        if (textHeight < boxHeight) { textbox.set('top', originalTop + (boxHeight - textHeight) / 2);
-        } 
-        else { textbox.set('top', originalTop);
-        }
+        if (textHeight < boxHeight) { textbox.set('top', originalTop + (boxHeight - textHeight) / 2); } 
+        else { textbox.set('top', originalTop); }
         canvas.requestRenderAll();
     }
 
@@ -631,8 +602,7 @@
         reader.onload = function(e) {
             const result = e.target.result;
             if (file.type === 'image/gif') { loadGif(result, layerKey); } 
-            else { fabric.Image.fromURL(result, function(img) { setupLayerObj(img, layerKey); });
-            }
+            else { fabric.Image.fromURL(result, function(img) { setupLayerObj(img, layerKey); }); }
         };
         reader.readAsDataURL(file);
     }
@@ -648,10 +618,12 @@
         const imgTag = document.createElement('img');
         imgTag.src = dataUrl;
         container.appendChild(imgTag);
+
         const rubbableGif = new SuperGif({ gif: imgTag, auto_play: false });
         rubbableGif.load(function() {
             const gifCanvas = rubbableGif.get_canvas();
             const fabricImg = new fabric.Image(gifCanvas, { objectCaching: false });
+            // [수정] Undo/Redo 복구를 위해 원본 소스 저장
             fabricImg._gifDataUrl = dataUrl; 
             setupLayerObj(fabricImg, layerKey);
             activeGifs.push({ fabricObj: fabricImg, superGif: rubbableGif, canvasEl: gifCanvas, container: container });
@@ -737,8 +709,7 @@
     };
     window.flipActiveObject = () => {
         const obj = canvas.getActiveObject();
-        if(obj) { obj.set('flipX', !obj.flipX);
-        canvas.requestRenderAll(); saveHistory(); }
+        if(obj) { obj.set('flipX', !obj.flipX); canvas.requestRenderAll(); saveHistory(); }
     };
 
     window.deleteActiveObject = () => {
@@ -828,24 +799,25 @@
     let stateHistory = [];
     let historyStep = -1;
     let isHistoryLocked = false;
+    // [수정] GIF 복구를 위해 _gifDataUrl 속성 추가
     const SAVE_PROPS = ['id', 'fixedHeight', 'selectable', 'evented', '_layerKey', '_originalState', 'padding', '_originalTop', '_gifDataUrl'];
+
     function saveHistory() {
         if (isHistoryLocked) return;
         const json = JSON.stringify(canvas.toJSON(SAVE_PROPS));
         if (historyStep < stateHistory.length - 1) stateHistory = stateHistory.slice(0, historyStep + 1);
         stateHistory.push(json);
         historyStep++;
-        if(stateHistory.length > 20) { stateHistory.shift(); historyStep--;
-        }
+        if(stateHistory.length > 20) { stateHistory.shift(); historyStep--; }
     }
 
-    function undo() { if (historyStep > 0) { historyStep--; loadState(stateHistory[historyStep]);
-    } }
-    function redo() { if (historyStep < stateHistory.length - 1) { historyStep++; loadState(stateHistory[historyStep]);
-    } }
+    function undo() { if (historyStep > 0) { historyStep--; loadState(stateHistory[historyStep]); } }
+    function redo() { if (historyStep < stateHistory.length - 1) { historyStep++; loadState(stateHistory[historyStep]); } }
 
     function loadState(json) {
         isHistoryLocked = true;
+        
+        // [수정] 메모리 누수 방지 및 GIF 초기화
         activeGifs.forEach(g => {
             if (g.superGif) g.superGif.pause();
             if (g.container && g.container.parentNode) {
@@ -859,6 +831,7 @@
             layers.img1 = layers.img2 = layers.img3 = null;
 
             objs.forEach(obj => {
+                // 레이어 참조 및 클리핑 복구
                 if (obj._layerKey) {
                     layers[obj._layerKey] = obj;
                     if(clipRects[obj._layerKey]) {
@@ -872,6 +845,7 @@
                     }
                 }
 
+                // 텍스트 이벤트 리스너 복구
                 if (obj.type === 'textbox') {
                     obj.on('changed', () => { alignVerticalCenter(obj); saveHistory(); });
                     obj.on('scaling', function() {
@@ -882,6 +856,7 @@
                     });
                 }
 
+                // [수정] GIF 재생 상태 복구
                 if (obj._gifDataUrl) {
                     const container = document.createElement('div');
                     container.style.position = 'fixed'; container.style.left = '-9999px';
@@ -893,17 +868,22 @@
                     const imgTag = document.createElement('img');
                     imgTag.src = obj._gifDataUrl;
                     container.appendChild(imgTag);
+
                     const rubbableGif = new SuperGif({ gif: imgTag, auto_play: false });
                     rubbableGif.load(function() {
                         const gifCanvas = rubbableGif.get_canvas();
+                        // 원본 위치/크기를 유지하며 소스 Element만 GIF 캔버스로 교체
                         obj.setElement(gifCanvas);
                         obj.set({ objectCaching: false, dirty: true });
+                        
                         activeGifs.push({ fabricObj: obj, superGif: rubbableGif, canvasEl: gifCanvas, container: container });
                         rubbableGif.play();
                         updateGifInfo();
                     });
                 }
             });
+
+            // [수정] 로고 효과(함수) 재적용
             if (layers.img3) {
                 updateLogoEffects();
             }
@@ -915,6 +895,10 @@
         });
     }
 
+    const gifWorkerBlob = new Blob([`importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');`], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(gifWorkerBlob);
+
+    // 저장 버튼 클릭 이벤트
     document.getElementById('save-btn').addEventListener('click', async () => {
         canvas.discardActiveObject();
         resetAllOpacities();
@@ -922,7 +906,8 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
         const resScale = parseFloat(document.getElementById('res-scale-input').value);
-        
+        const gifQuality = parseInt(document.getElementById('gif-quality-input').value);
+
         const wrapper = document.getElementById('canvas-wrapper');
         const originalTransform = wrapper.style.transform;
         const originalMargin = wrapper.style.marginTop;
@@ -944,79 +929,61 @@
             return;
         }
 
+        let speedMult = parseFloat(document.getElementById('gif-speed-input').value) || 1.0;
+        let userFps = parseFloat(document.getElementById('gif-fps-input').value);
+        let userFrameDelay = parseInt(document.getElementById('gif-delay-input').value);
+
+        loadingText.innerText = "프레임 추출 중...";
+        let mainGif = activeGifs[0];
+        let calculatedMaxFrames = 0;
+        let originalDelay = 100;
+        activeGifs.forEach(g => {
+            const len = g.superGif.get_length();
+            if (len > calculatedMaxFrames) { calculatedMaxFrames = len; mainGif = g; }
+        });
         try {
-            loadingText.innerText = "FFmpeg 엔진 로딩 중... (최초 1회)";
-            await initFFmpeg();
+            const frames = mainGif.superGif.get_frames(); 
+            if(frames && frames.length > 0 && frames[0].delay) originalDelay = frames[0].delay * 10;
+        } catch(e) {}
+        let finalDelay = originalDelay / speedMult;
+        if (userFps > 0) finalDelay = 1000 / userFps;
+        else if (userFrameDelay > 0) finalDelay = userFrameDelay;
 
-            let speedMult = parseFloat(document.getElementById('gif-speed-input').value) || 1.0;
-            let userFps = parseFloat(document.getElementById('gif-fps-input').value);
-            let userFrameDelay = parseInt(document.getElementById('gif-delay-input').value);
+        const totalDuration = (calculatedMaxFrames * originalDelay) / speedMult;
+        const maxFrames = Math.max(1, Math.round(totalDuration / finalDelay));
 
-            let mainGif = activeGifs[0];
-            let calculatedMaxFrames = 0;
-            let originalDelay = 100;
+        const gif = new GIF({ 
+            workers: 4, quality: gifQuality, 
+            width: 1024 * resScale, height: 765 * resScale, 
+            workerScript: workerUrl 
+        });
+        activeGifs.forEach(g => g.superGif.pause());
+
+        for (let i = 0; i < maxFrames; i++) {
+            loadingText.innerText = `프레임 캡처 (${i + 1}/${maxFrames})`;
             activeGifs.forEach(g => {
                 const len = g.superGif.get_length();
-                if (len > calculatedMaxFrames) { calculatedMaxFrames = len; mainGif = g; }
+                const progress = i / maxFrames;
+                const targetFrame = Math.floor(progress * len);
+                g.superGif.move_to(targetFrame % len);
+                g.fabricObj.dirty = true;
             });
-            try {
-                const frames = mainGif.superGif.get_frames();
-                if(frames && frames.length > 0 && frames[0].delay) originalDelay = frames[0].delay * 10;
-            } catch(e) {}
-            
-            let finalDelay = originalDelay / speedMult;
-            if (userFps > 0) finalDelay = 1000 / userFps;
-            else if (userFrameDelay > 0) finalDelay = userFrameDelay;
-            const totalDuration = (calculatedMaxFrames * originalDelay) / speedMult;
-            const maxFrames = Math.max(1, Math.round(totalDuration / finalDelay));
-
-            activeGifs.forEach(g => g.superGif.pause());
-            const frameFileNames = [];
-            for (let i = 0; i < maxFrames; i++) {
-                loadingText.innerText = `프레임 캡처 중 (${i + 1}/${maxFrames})`;
-                activeGifs.forEach(g => {
-                    const len = g.superGif.get_length();
-                    const progress = i / maxFrames;
-                    const targetFrame = Math.floor(progress * len);
-                    g.superGif.move_to(targetFrame % len);
-                    g.fabricObj.dirty = true;
-                });
-                canvas.renderAll();
-                const dataURL = canvas.toDataURL({ format: 'png', multiplier: resScale });
-                const fileName = `frame${String(i).padStart(3, '0')}.png`;
-                frameFileNames.push(fileName);
-                await ffmpeg.writeFile(fileName, await fetchFile(dataURL));
-                await new Promise(r => setTimeout(r, 0));
-            }
-
-            loadingText.innerText = "최적화 인코딩 중... (고화질/저용량)";
-            const finalFps = (userFps > 0) ? userFps : (1000 / finalDelay);
-            const w = 1024 * resScale;
-            await ffmpeg.exec([
-                '-framerate', String(finalFps),
-                '-i', 'frame%03d.png',
-                '-vf', `scale=${w}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
-                'output.gif'
-            ]);
-            const data = await ffmpeg.readFile('output.gif');
-            const blob = new Blob([data.buffer], { type: 'image/gif' });
+            const frameCanvas = canvas.toCanvasElement(resScale);
+            gif.addFrame(frameCanvas, { delay: finalDelay, copy: true });
+            await new Promise(r => setTimeout(r, 0));
+        }
+        
+        loadingText.innerText = "인코딩 중...";
+        gif.on('finished', function(blob) {
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `텐카_움짤_${dateStr}.gif`;
             link.click();
-            await ffmpeg.deleteFile('output.gif');
-            for (const name of frameFileNames) {
-                await ffmpeg.deleteFile(name);
-            }
-
-        } catch (err) {
-            console.error(err);
-            alert('인코딩 중 오류가 발생했습니다: ' + err.message);
-        } finally {
             activeGifs.forEach(g => g.superGif.play());
             wrapper.style.transform = originalTransform; wrapper.style.marginTop = originalMargin;
             loading.style.display = 'none';
-        }
+        });
+        gif.render();
     });
 
     document.getElementById('mobile-mode-toggle').addEventListener('change', (e) => {
@@ -1039,7 +1006,7 @@
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
         if (e.key === 'Delete') { deleteActiveObject(); }
     });
-
+    
     document.getElementById('font-input').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
