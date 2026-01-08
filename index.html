@@ -355,20 +355,20 @@
 
     <div class="control-section">
         <div class="section-title" onclick="toggleSection(this)">
-            <span>💾 저장 및 최적화</span>
+            <span>💾 저장 옵션</span>
             <span class="toggle-arrow">▼</span>
         </div>
         <div class="section-content">
             <div class="slider-item">
-                <div class="label-with-reset">배속 <button class="reset-mini-btn" onclick="resetPlainInput('gif-speed-input', 1.0)">↺</button></div>
+                <div class="label-with-reset">배속(움짤) <button class="reset-mini-btn" onclick="resetPlainInput('gif-speed-input', 1.0)">↺</button></div>
                 <input type="number" id="gif-speed-input" class="num-input" value="1.0" step="0.1" min="0.1">
             </div>
             <div class="slider-item">
-                <div class="label-with-reset">FPS <button class="reset-mini-btn" onclick="resetPlainInput('gif-fps-input', 0)">↺</button></div>
+                <div class="label-with-reset">FPS(움짤) <button class="reset-mini-btn" onclick="resetPlainInput('gif-fps-input', 0)">↺</button></div>
                 <input type="number" id="gif-fps-input" class="num-input" value="0">
             </div>
             <div class="slider-item">
-                <div class="label-with-reset">지연(ms) <button class="reset-mini-btn" onclick="resetPlainInput('gif-delay-input', 0)">↺</button></div>
+                <div class="label-with-reset">지연(움짤) <button class="reset-mini-btn" onclick="resetPlainInput('gif-delay-input', 0)">↺</button></div>
                 <input type="number" id="gif-delay-input" class="num-input" value="0">
             </div>
             <div class="slider-item">
@@ -382,7 +382,7 @@
                 </select>
             </div>
             <div class="slider-item">
-                <div class="label-with-reset">품질 <button class="reset-mini-btn" onclick="resetPlainInput('gif-quality-input', 10)">↺</button></div>
+                <div class="label-with-reset">품질(움짤) <button class="reset-mini-btn" onclick="resetPlainInput('gif-quality-input', 10)">↺</button></div>
                 <input type="number" id="gif-quality-input" class="num-input" value="10" min="1" max="20">
             </div>
         </div>
